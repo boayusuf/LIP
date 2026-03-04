@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "LockInPhase",
+    "slug": "lockinphase",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "lockinphase",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#111214"
+    },
+    "web": {
+      "output": "single",
+      "bundler": "metro"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lockinphase.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#111214"
+      },
+      "package": "com.lockinphase.app"
+    },
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}
