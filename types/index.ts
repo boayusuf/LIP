@@ -31,6 +31,7 @@ export interface Task {
   next_reset_at: string | null;
   timer_started_at: string | null;
   timer_elapsed_sec: number;
+  completed_at: string | null;
   created_at: string;
   subtasks?: Subtask[];
 }
@@ -128,7 +129,7 @@ export interface GroupTask {
   is_active: boolean;
   created_at: string;
   my_completion?: GroupTaskCompletion;
-  all_completions?: any[];
+  all_completions?: (GroupTaskCompletion & { profile: Profile | null })[];
 }
 
 export interface GroupTaskCompletion {

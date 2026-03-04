@@ -187,6 +187,7 @@ export const useStore = create<AppState>((set, get) => ({
       timer_started_at: null,
       timer_elapsed_sec: finalElapsed,
       xp_earned: xp,
+      completed_at: new Date().toISOString(),
     }).eq('id', id);
     const { profile } = get();
     if (profile) {
@@ -215,6 +216,7 @@ export const useStore = create<AppState>((set, get) => ({
         xp_earned: 0,
         timer_elapsed_sec: 0,
         timer_started_at: null,
+        completed_at: null,
         next_reset_at: nextReset,
       }).eq('id', task.id);
       await supabase.from('subtasks').update({ status: 'todo' }).eq('task_id', task.id);

@@ -259,8 +259,16 @@ export default function ProfileScreen() {
       ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
       : '';
 
-    const { data: recentTasks } = await supabase
+    const { data: recentPersonalTasks } = await supabase
       .from('tasks')
+      .select('completed_at')
+      .eq('user_id', user.id)
+      .not('completed_at', 'is', null)
+      .order('completed_at', { ascending: false })
+      .limit(100);
+
+    const { data: recentGroupTasks } = await supabase
+      .from('group_task_completions')
       .select('completed_at')
       .eq('user_id', user.id)
       .eq('status', 'done')
@@ -268,8 +276,13 @@ export default function ProfileScreen() {
       .order('completed_at', { ascending: false })
       .limit(100);
 
+    const recentTasks = [
+      ...(recentPersonalTasks || []),
+      ...(recentGroupTasks || []),
+    ].sort((a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime());
+
     let streak = 0;
-    if (recentTasks && recentTasks.length > 0) {
+    if (recentTasks.length > 0) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       let checkDate = new Date(today);

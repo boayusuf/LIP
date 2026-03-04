@@ -449,20 +449,25 @@ export const useGroupStore = create<GroupState>((set, get) => ({
 
     // Upload photo if provided
     if (photoUri) {
-      const ext = photoUri.split('.').pop() || 'jpg';
+      const ext = photoUri.split('.').pop()?.split('?')[0]?.toLowerCase() || 'jpg';
+      const mimeType = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
       const fileName = `${user.id}/${groupTaskId}_${Date.now()}.${ext}`;
-      const response = await fetch(photoUri);
-      const blob = await response.blob();
 
-      const { error: uploadError } = await supabase.storage
-        .from('photos')
-        .upload(fileName, blob, { contentType: `image/${ext}` });
-
-      if (!uploadError) {
-        const { data: urlData } = supabase.storage
+      try {
+        const response = await fetch(photoUri);
+        const blob = await response.blob();
+        const { error: uploadError } = await supabase.storage
           .from('photos')
-          .getPublicUrl(fileName);
-        photoUrl = urlData.publicUrl;
+          .upload(fileName, blob, { contentType: mimeType });
+
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage
+            .from('photos')
+            .getPublicUrl(fileName);
+          photoUrl = urlData.publicUrl;
+        }
+      } catch {
+        // Photo upload failed, proceed without photo
       }
     }
 
