@@ -1,5 +1,7 @@
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import {
+  Camera,
   Check,
   ChevronRight,
   Edit3,
@@ -21,6 +23,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import AvatarImage from '../../components/AvatarImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
 import { useGroupStore } from '../../lib/groupStore';
@@ -185,7 +188,7 @@ function ContributionHeatmap({ data, totalDays }: { data: HeatmapData; totalDays
 }
 
 export default function ProfileScreen() {
-  const { session, profile, fetchProfile } = useStore();
+  const { session, profile, fetchProfile, uploadAvatar } = useStore();
   const { groups, fetchGroups } = useGroupStore();
   const router = useRouter();
 
@@ -308,11 +311,30 @@ export default function ProfileScreen() {
       }
     }
 
-    setStats({
+    const newStats = {
       tasksCompleted: (personalDone || 0) + (groupDone || 0),
       streak,
       joined,
+    };
+    setStats(newStats);
+
+  };
+
+  const handleAvatarPress = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Permission needed', 'Please allow photo library access in settings.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+      allowsEditing: true,
+      aspect: [1, 1],
     });
+    if (result.canceled || !result.assets[0]) return;
+    const { error } = await uploadAvatar(result.assets[0].uri);
+    if (error) Alert.alert('Upload failed', error);
   };
 
   const handleSaveName = async () => {
@@ -350,9 +372,17 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.profileCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{displayName.charAt(0).toUpperCase()}</Text>
-          </View>
+          <TouchableOpacity onPress={handleAvatarPress} style={styles.avatarWrapper}>
+            <AvatarImage
+              avatarUrl={profile?.avatar_url ?? null}
+              name={displayName}
+              size={80}
+              style={styles.avatarBorder}
+            />
+            <View style={styles.cameraBadge}>
+              <Camera color={Colors.textPrimary} size={12} />
+            </View>
+          </TouchableOpacity>
           {editingName ? (
             <View style={styles.editNameRow}>
               <TextInput
@@ -487,12 +517,14 @@ const styles = StyleSheet.create({
   header: { paddingTop: 8, paddingBottom: 16 },
   headerTitle: { fontSize: 28, fontWeight: '800', color: Colors.textPrimary },
   profileCard: { alignItems: 'center', marginBottom: 20 },
-  avatar: {
-    width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.accent + '20',
-    alignItems: 'center', justifyContent: 'center', marginBottom: 12,
-    borderWidth: 3, borderColor: Colors.accent,
+  avatarWrapper: { marginBottom: 12, position: 'relative' },
+  avatarBorder: { borderWidth: 3, borderColor: Colors.accent },
+  cameraBadge: {
+    position: 'absolute', bottom: 0, right: 0,
+    width: 24, height: 24, borderRadius: 12,
+    backgroundColor: Colors.accent, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: Colors.background,
   },
-  avatarText: { fontSize: 32, fontWeight: '700', color: Colors.accent },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   displayName: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary },
   editNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
@@ -545,4 +577,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   logoutText: { fontSize: 15, fontWeight: '600', color: Colors.priorityUrgent },
+  coachCard: {
+    backgroundColor: Colors.primary, borderRadius: 14, padding: 16, marginBottom: 20,
+    borderWidth: 1, borderColor: Colors.accent + '30',
+  },
+  coachHeader: { fontSize: 14, fontWeight: '700', color: Colors.accent, marginBottom: 8 },
+  coachMessage: { fontSize: 14, color: Colors.textSecondary, lineHeight: 22 },
 });

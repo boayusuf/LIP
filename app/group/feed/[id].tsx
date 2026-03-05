@@ -1,4 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import AvatarImage from '../../../components/AvatarImage';
 import { ArrowLeft, MessageCircle, Send } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -30,6 +31,7 @@ export default function FeedScreen() {
     feedItems,
     fetchFeed,
     fetchGroupDetail,
+    subscribeToFeed,
     addFeedReaction,
     removeFeedReaction,
     addFeedComment,
@@ -45,6 +47,8 @@ export default function FeedScreen() {
     if (id) {
       fetchGroupDetail(id);
       fetchFeed(id);
+      const unsub = subscribeToFeed(id);
+      return unsub;
     }
   }, [id]);
 
@@ -114,11 +118,12 @@ export default function FeedScreen() {
     return (
       <View style={styles.feedCard}>
         <View style={styles.feedHeader}>
-          <View style={styles.feedAvatar}>
-            <Text style={styles.feedAvatarText}>
-              {authorName.charAt(0).toUpperCase()}
-            </Text>
-          </View>
+          <AvatarImage
+            size={36}
+            name={authorName}
+            avatarUrl={item.author?.avatar_url ?? null}
+            style={{ marginRight: 10 }}
+          />
           <View style={styles.feedHeaderInfo}>
             <Text style={styles.feedAuthor}>{authorName}</Text>
             <Text style={styles.feedTime}>{formatTime(item.created_at)}</Text>
@@ -129,6 +134,13 @@ export default function FeedScreen() {
         <Text style={styles.feedContentText}>
           {item.content || `${authorName} ${item.type.replace('_', ' ')}`}
         </Text>
+
+        {/* Check-in note */}
+        {item.checkin_note && (
+          <View style={styles.checkinNote}>
+            <Text style={styles.checkinNoteText}>"{item.checkin_note}"</Text>
+          </View>
+        )}
 
         {/* Photo display */}
         {item.photo_url && (
@@ -325,4 +337,10 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary, borderWidth: 1, borderColor: Colors.border,
   },
   commentSendBtn: { padding: 6 },
+  checkinNote: {
+    borderLeftWidth: 3, borderLeftColor: Colors.accent,
+    paddingLeft: 10, paddingVertical: 4, marginBottom: 8,
+    backgroundColor: Colors.accent + '10', borderRadius: 4,
+  },
+  checkinNoteText: { fontSize: 13, color: Colors.textSecondary, fontStyle: 'italic', lineHeight: 18 },
 });

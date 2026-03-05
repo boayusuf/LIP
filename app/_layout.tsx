@@ -2,12 +2,13 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Colors } from '../constants/Colors';
 import { useStore } from '../lib/store';
 import { supabase } from '../lib/supabase';
 
 export default function RootLayout() {
-  const { session, loading, setSession, fetchProfile, fetchTasks, resetRepeatingTasks } = useStore();
+  const { session, loading, profile, setSession, fetchProfile, fetchTasks, resetRepeatingTasks, registerPushToken } = useStore();
   const segments = useSegments();
   const router = useRouter();
 
@@ -25,18 +26,29 @@ export default function RootLayout() {
     if (session) {
       fetchProfile();
       fetchTasks().then(() => resetRepeatingTasks());
+      registerPushToken();
     }
   }, [session]);
 
   useEffect(() => {
     if (loading) return;
-    const inAuthGroup = segments[0] === '(auth)';
-    if (!session && !inAuthGroup) {
-      router.replace('/(auth)/login');
-    } else if (session && inAuthGroup) {
-      router.replace('/(tabs)');
+    const inAuth = segments[0] === '(auth)';
+    const inOnboarding = segments[0] === '(onboarding)';
+
+    if (!session) {
+      if (!inAuth) router.replace('/(auth)/login');
+      return;
     }
-  }, [session, loading, segments]);
+
+    // Session exists — wait for profile to load before deciding
+    if (!profile) return;
+
+    if (profile.onboarding_complete === false) {
+      if (!inOnboarding) router.replace('/(onboarding)/welcome');
+    } else {
+      if (inAuth || inOnboarding) router.replace('/(tabs)');
+    }
+  }, [session, loading, profile, segments]);
 
   if (loading) {
     return (
@@ -48,13 +60,14 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(onboarding)" />
         <Stack.Screen name="(tabs)" />
       </Stack>
-    </>
+    </GestureHandlerRootView>
   );
 }
 

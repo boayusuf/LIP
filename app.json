@@ -22,10 +22,24 @@
       "adaptiveIcon": {
         "backgroundColor": "#111214"
       },
-      "package": "com.lockinphase.app"
+      "package": "com.lockinphase.app",
+      "softwareKeyboardLayoutMode": "resize"
     },
     "plugins": [
-      "expo-router"
-    ]
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#5865F2"
+        }
+      ]
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/lockinphase"
+    }
   }
 }

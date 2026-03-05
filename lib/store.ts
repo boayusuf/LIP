@@ -1,3 +1,4 @@
+import * as Notifications from 'expo-notifications';
 import { addDays, addMonths, addWeeks, nextMonday, startOfDay } from 'date-fns';
 import { create } from 'zustand';
 import { Profile, Subtask, SubtaskFormData, Task, TaskFormData } from '../types';
@@ -26,6 +27,9 @@ interface AppState {
   addSubtask: (taskId: string, data: SubtaskFormData) => Promise<void>;
   toggleSubtask: (subtask: Subtask) => Promise<void>;
   deleteSubtask: (id: string) => Promise<void>;
+  uploadAvatar: (uri: string) => Promise<{ error: string | null }>;
+  completeOnboarding: () => Promise<void>;
+  registerPushToken: () => Promise<void>;
 }
 
 function calculateXP(durationMin: number, priority: string): number {
@@ -255,5 +259,47 @@ export const useStore = create<AppState>((set, get) => ({
   deleteSubtask: async (id) => {
     await supabase.from('subtasks').delete().eq('id', id);
     await get().fetchTasks();
+  },
+
+  registerPushToken: async () => {
+    const { session } = get();
+    if (!session?.user) return;
+    try {
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== 'granted') return;
+      const token = (await Notifications.getExpoPushTokenAsync()).data;
+      await supabase.from('profiles').update({ push_token: token }).eq('id', session.user.id);
+    } catch (_) {}
+  },
+
+  completeOnboarding: async () => {
+    const { session, profile } = get();
+    if (!session?.user) return;
+    // Optimistically update store immediately so the redirect logic sees the new value before navigation
+    if (profile) set({ profile: { ...profile, onboarding_complete: true } });
+    await supabase.from('profiles').update({ onboarding_complete: true }).eq('id', session.user.id);
+  },
+
+  uploadAvatar: async (uri) => {
+    const { session } = get();
+    if (!session?.user) return { error: 'Not logged in' };
+    try {
+      // Always upload as JPEG — image picker with allowsEditing outputs JPEG on iOS/Android
+      const mimeType = 'image/jpeg';
+      const fileName = `${session.user.id}/avatar.jpg`;
+      const response = await fetch(uri);
+      const arrayBuffer = await response.arrayBuffer();
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, arrayBuffer, { contentType: mimeType, upsert: true });
+      if (uploadError) return { error: uploadError.message };
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      const cacheBust = `${publicUrl}?t=${Date.now()}`;
+      await supabase.from('profiles').update({ avatar_url: cacheBust }).eq('id', session.user.id);
+      await get().fetchProfile();
+      return { error: null };
+    } catch (e: any) {
+      return { error: e.message || 'Upload failed' };
+    }
   },
 }));

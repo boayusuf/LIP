@@ -1,10 +1,13 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Send, X } from 'lucide-react-native';
-import { useEffect, useRef, useState } from 'react';
+// eslint-disable-next-line deprecation/deprecation
+import { Swipeable } from 'react-native-gesture-handler';
+import { ArrowLeft, Reply, Send, X } from 'lucide-react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -16,6 +19,8 @@ import { Colors } from '../../../constants/Colors';
 import { useGroupStore } from '../../../lib/groupStore';
 import { useStore } from '../../../lib/store';
 import { Message } from '../../../types';
+
+const MENTION_REGEX = /@(\w*)$/;
 
 export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -33,6 +38,9 @@ export default function ChatScreen() {
   const [text, setText] = useState('');
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const flatListRef = useRef<FlatList>(null);
+  const inputRef = useRef<TextInput>(null);
+  // eslint-disable-next-line deprecation/deprecation
+  const swipeableRefs = useRef<Map<string, Swipeable>>(new Map());
   const userId = session?.user?.id;
 
   useEffect(() => {
@@ -52,6 +60,25 @@ export default function ChatScreen() {
     }
   }, [messages.length]);
 
+  // @mention autocomplete
+  const mentionMatch = text.match(MENTION_REGEX);
+  const partialMention = mentionMatch ? mentionMatch[1].toLowerCase() : null;
+  const members = currentGroup?.members || [];
+
+  const mentionSuggestions = useMemo(() => {
+    if (partialMention === null) return [];
+    return (members as any[]).filter((m) => {
+      const name = (m.profile?.name || m.profile?.email?.split('@')[0] || '').toLowerCase();
+      return m.user_id !== userId && name.startsWith(partialMention);
+    }).slice(0, 5);
+  }, [partialMention, members, userId]);
+
+  const handleMentionSelect = (member: any) => {
+    const name = member.profile?.name || member.profile?.email?.split('@')[0] || 'User';
+    setText(text.replace(MENTION_REGEX, `@${name} `));
+    inputRef.current?.focus();
+  };
+
   const handleSend = async () => {
     if (!text.trim() || !id) return;
     const msg = text.trim();
@@ -65,16 +92,48 @@ export default function ChatScreen() {
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const renderMentions = (content: string) => {
+    const parts = content.split(/(@\w+)/g);
+    return parts.map((part, i) =>
+      /^@\w+$/.test(part) ? (
+        <Text key={i} style={styles.mentionHighlight}>{part}</Text>
+      ) : (
+        <Text key={i}>{part}</Text>
+      )
+    );
+  };
+
+  const renderLeftActions = () => (
+    <View style={styles.swipeAction}>
+      <Reply color={Colors.accent} size={20} />
+    </View>
+  );
+
   const renderMessage = ({ item }: { item: Message }) => {
     const isMine = item.user_id === userId;
     const senderName = item.sender?.name || item.sender?.email?.split('@')[0] || 'Unknown';
 
     return (
-      <TouchableOpacity
-        activeOpacity={0.7}
-        onLongPress={() => setReplyTo(item)}
-        delayLongPress={300}
-        style={styles.swipeContainer}
+      <Swipeable
+        ref={(ref) => {
+          if (ref) swipeableRefs.current.set(item.id, ref);
+          else swipeableRefs.current.delete(item.id);
+        }}
+        renderLeftActions={renderLeftActions}
+        onSwipeableWillOpen={(direction: string) => {
+          if (direction === 'left') {
+            swipeableRefs.current.forEach((ref, msgId) => {
+              if (msgId !== item.id) ref.close();
+            });
+            setReplyTo(item);
+            inputRef.current?.focus();
+            setTimeout(() => swipeableRefs.current.get(item.id)?.close(), 80);
+          }
+        }}
+        friction={1.5}
+        leftThreshold={35}
+        overshootLeft={false}
+        containerStyle={styles.swipeContainer}
       >
         <View style={[styles.msgRow, isMine && styles.msgRowMine]}>
           <View style={[styles.msgBubble, isMine ? styles.msgBubbleMine : styles.msgBubbleOther]}>
@@ -91,11 +150,11 @@ export default function ChatScreen() {
                 </Text>
               </View>
             )}
-            <Text style={styles.msgText}>{item.content}</Text>
-            <Text style={styles.msgTime}>{formatTime(item.created_at)}</Text>
+            <Text style={styles.msgText}>{renderMentions(item.content)}</Text>
+            <Text style={[styles.msgTime, isMine && styles.msgTimeMine]}>{formatTime(item.created_at)}</Text>
           </View>
         </View>
-      </TouchableOpacity>
+      </Swipeable>
     );
   };
 
@@ -122,6 +181,7 @@ export default function ChatScreen() {
         renderItem={renderMessage}
         style={styles.messageList}
         contentContainerStyle={styles.messageContent}
+        keyboardShouldPersistTaps="handled"
         onContentSizeChange={() =>
           flatListRef.current?.scrollToEnd({ animated: false })
         }
@@ -150,12 +210,35 @@ export default function ChatScreen() {
         </View>
       )}
 
+      {/* @mention suggestion overlay */}
+      {mentionSuggestions.length > 0 && (
+        <View style={styles.mentionOverlay}>
+          <ScrollView keyboardShouldPersistTaps="always">
+            {mentionSuggestions.map((m: any) => {
+              const name = m.profile?.name || m.profile?.email?.split('@')[0] || 'User';
+              return (
+                <TouchableOpacity
+                  key={m.user_id}
+                  style={styles.mentionItem}
+                  onPress={() => handleMentionSelect(m)}
+                >
+                  <Text style={styles.mentionName}>@{name}</Text>
+                  {m.profile?.email && (
+                    <Text style={styles.mentionEmail}>{m.profile.email}</Text>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
+
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.inputBar}>
           <TextInput
+            ref={inputRef}
             style={styles.input}
             placeholder="Type a message..."
             placeholderTextColor={Colors.textMuted}
@@ -195,7 +278,12 @@ const styles = StyleSheet.create({
   emptyChatText: { fontSize: 16, fontWeight: '600', color: Colors.textPrimary },
   emptyChatSub: { fontSize: 13, color: Colors.textMuted, marginTop: 4 },
   swipeContainer: { marginBottom: 8 },
-  // Messages
+  swipeAction: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 60,
+    paddingLeft: 12,
+  },
   msgRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 6 },
   msgRowMine: { flexDirection: 'row-reverse' },
   msgBubble: { maxWidth: '75%', borderRadius: 16, padding: 10, paddingHorizontal: 14 },
@@ -214,7 +302,7 @@ const styles = StyleSheet.create({
   replyText: { fontSize: 12, color: Colors.textMuted },
   msgText: { fontSize: 15, color: Colors.textPrimary, lineHeight: 20 },
   msgTime: { fontSize: 10, color: Colors.textMuted, marginTop: 4, alignSelf: 'flex-end' },
-  // Reply bar
+  msgTimeMine: { color: 'rgba(255,255,255,0.55)' },
   replyBar: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 16, paddingVertical: 8,
@@ -227,7 +315,18 @@ const styles = StyleSheet.create({
   },
   replyBarName: { fontSize: 12, fontWeight: '600', color: Colors.accent },
   replyBarText: { fontSize: 13, color: Colors.textMuted },
-  // Input
+  mentionOverlay: {
+    backgroundColor: Colors.primary, borderTopWidth: 1, borderTopColor: Colors.border,
+    maxHeight: 160,
+  },
+  mentionItem: {
+    paddingHorizontal: 16, paddingVertical: 10,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+  },
+  mentionName: { fontSize: 15, fontWeight: '600', color: Colors.accent },
+  mentionEmail: { fontSize: 12, color: Colors.textMuted },
+  mentionHighlight: { color: Colors.textSecondary, fontWeight: '600' },
   inputBar: {
     flexDirection: 'row', alignItems: 'flex-end',
     paddingHorizontal: 12, paddingVertical: 8,

@@ -11,6 +11,7 @@ import { supabase } from './supabase';
 
 interface GroupState {
   groups: Group[];
+  dmGroups: Group[];
   groupsLoading: boolean;
   currentGroup: Group | null;
   proposals: TaskProposal[];
@@ -19,7 +20,9 @@ interface GroupState {
   feedItems: FeedItem[];
 
   fetchGroups: () => Promise<void>;
+  fetchDMs: () => Promise<void>;
   createGroup: (name: string, description: string) => Promise<{ error: string | null; group?: Group }>;
+  createDM: (otherUserId: string) => Promise<{ error: string | null; group?: Group }>;
   joinGroup: (inviteCode: string) => Promise<{ error: string | null }>;
   leaveGroup: (groupId: string) => Promise<void>;
   fetchGroupDetail: (groupId: string) => Promise<void>;
@@ -31,13 +34,14 @@ interface GroupState {
   fetchGroupTasks: (groupId: string) => Promise<void>;
   startGroupTimer: (completionId: string) => Promise<void>;
   stopGroupTimer: (completionId: string) => Promise<void>;
-  completeGroupTask: (completionId: string, groupTaskId: string, groupId: string, photoUri?: string) => Promise<void>;
+  completeGroupTask: (completionId: string, groupTaskId: string, groupId: string, photoUri?: string, checkinNote?: string) => Promise<void>;
 
   fetchMessages: (groupId: string) => Promise<void>;
   sendMessage: (groupId: string, content: string, replyToId?: string) => Promise<void>;
   subscribeToMessages: (groupId: string) => () => void;
 
   fetchFeed: (groupId: string) => Promise<void>;
+  subscribeToFeed: (groupId: string) => () => void;
   addFeedReaction: (feedItemId: string, emoji: string) => Promise<void>;
   removeFeedReaction: (feedItemId: string, emoji: string) => Promise<void>;
   addFeedComment: (feedItemId: string, content: string) => Promise<void>;
@@ -45,6 +49,7 @@ interface GroupState {
 
 export const useGroupStore = create<GroupState>((set, get) => ({
   groups: [],
+  dmGroups: [],
   groupsLoading: false,
   currentGroup: null,
   proposals: [],
@@ -188,7 +193,95 @@ export const useGroupStore = create<GroupState>((set, get) => ({
       .eq('group_id', groupId)
       .eq('user_id', user.id);
 
+    // Delete group if no members remain
+    const { count } = await supabase
+      .from('group_members')
+      .select('*', { count: 'exact', head: true })
+      .eq('group_id', groupId);
+    if (count === 0) {
+      await supabase.from('groups').delete().eq('id', groupId);
+    }
+
     await get().fetchGroups();
+  },
+
+  fetchDMs: async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: memberships } = await supabase
+      .from('group_members')
+      .select('group_id')
+      .eq('user_id', user.id);
+
+    if (!memberships || memberships.length === 0) {
+      set({ dmGroups: [] });
+      return;
+    }
+
+    const groupIds = memberships.map((m) => m.group_id);
+    const { data: groups } = await supabase
+      .from('groups')
+      .select('*')
+      .in('id', groupIds)
+      .eq('is_dm', true);
+
+    if (!groups) { set({ dmGroups: [] }); return; }
+
+    // For each DM, fetch the other member's profile
+    const dmGroupsWithOther = await Promise.all(
+      groups.map(async (g) => {
+        const { data: members } = await supabase
+          .from('group_members')
+          .select('*')
+          .eq('group_id', g.id);
+        const userIds = (members || []).map((m) => m.user_id);
+        let profiles: any[] = [];
+        if (userIds.length > 0) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('*')
+            .in('id', userIds);
+          profiles = profileData || [];
+        }
+        const membersWithProfiles = (members || []).map((m) => ({
+          ...m,
+          profile: profiles.find((p) => p.id === m.user_id) || null,
+        }));
+        return { ...g, members: membersWithProfiles, member_count: membersWithProfiles.length };
+      })
+    );
+    set({ dmGroups: dmGroupsWithOther });
+  },
+
+  createDM: async (otherUserId) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'Not logged in' };
+
+    // Check if DM already exists between these two users
+    const { dmGroups } = get();
+    const existing = dmGroups.find((g) =>
+      g.members?.some((m) => m.user_id === otherUserId)
+    );
+    if (existing) return { error: null, group: existing };
+
+    // Create new DM group
+    const { data: group, error } = await supabase
+      .from('groups')
+      .insert({ is_dm: true, name: 'DM', invite_code: Math.random().toString(36).slice(2, 8).toUpperCase(), created_by: user.id })
+      .select()
+      .single();
+
+    if (error) return { error: error.message };
+
+    await supabase.from('group_members').insert([
+      { group_id: group.id, user_id: user.id },
+      { group_id: group.id, user_id: otherUserId },
+    ]);
+
+    await get().fetchDMs();
+    const updated = get().dmGroups.find((g) => g.id === group.id);
+    return { error: null, group: updated || group };
   },
 
   fetchGroupDetail: async (groupId) => {
@@ -434,7 +527,7 @@ export const useGroupStore = create<GroupState>((set, get) => ({
     if (currentGroup) await get().fetchGroupTasks(currentGroup.id);
   },
 
-  completeGroupTask: async (completionId, groupTaskId, groupId, photoUri?) => {
+  completeGroupTask: async (completionId, groupTaskId, groupId, photoUri?, checkinNote?) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -449,16 +542,14 @@ export const useGroupStore = create<GroupState>((set, get) => ({
 
     // Upload photo if provided
     if (photoUri) {
-      const ext = photoUri.split('.').pop()?.split('?')[0]?.toLowerCase() || 'jpg';
-      const mimeType = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
-      const fileName = `${user.id}/${groupTaskId}_${Date.now()}.${ext}`;
+      const fileName = `${user.id}/${groupTaskId}_${Date.now()}.jpg`;
 
       try {
         const response = await fetch(photoUri);
-        const blob = await response.blob();
+        const arrayBuffer = await response.arrayBuffer();
         const { error: uploadError } = await supabase.storage
           .from('photos')
-          .upload(fileName, blob, { contentType: mimeType });
+          .upload(fileName, arrayBuffer, { contentType: 'image/jpeg' });
 
         if (!uploadError) {
           const { data: urlData } = supabase.storage
@@ -489,6 +580,7 @@ export const useGroupStore = create<GroupState>((set, get) => ({
       xp_earned: xp,
       completed_at: new Date().toISOString(),
       photo_url: photoUrl,
+      checkin_note: checkinNote || null,
     }).eq('id', completionId);
 
     const { data: profile } = await supabase
@@ -503,17 +595,20 @@ export const useGroupStore = create<GroupState>((set, get) => ({
       }).eq('id', user.id);
     }
 
-    await supabase.from('feed_items').insert({
+    const feedPayload: any = {
       group_id: groupId,
       user_id: user.id,
       type: photoUrl ? 'photo_checkin' : 'task_completed',
       group_task_id: groupTaskId,
       content: `completed "${task.title}"`,
       xp_earned: xp,
-      photo_url: photoUrl,
-    });
+      photo_url: photoUrl || null,
+    };
+    if (checkinNote) feedPayload.checkin_note = checkinNote;
+    await supabase.from('feed_items').insert(feedPayload);
 
     await get().fetchGroupTasks(groupId);
+    await get().fetchFeed(groupId);
   },
 
   fetchMessages: async (groupId) => {
@@ -655,6 +750,23 @@ export const useGroupStore = create<GroupState>((set, get) => ({
     } else {
       set({ feedItems: [] });
     }
+  },
+
+  subscribeToFeed: (groupId) => {
+    const channel = supabase
+      .channel(`feed:${groupId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'feed_items', filter: `group_id=eq.${groupId}` },
+        async () => { await get().fetchFeed(groupId); }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'feed_reactions' },
+        async () => { await get().fetchFeed(groupId); }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   },
 
   addFeedReaction: async (feedItemId, emoji) => {

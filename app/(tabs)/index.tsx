@@ -1,10 +1,11 @@
-import { ChevronDown, ChevronUp, Plus } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, Plus, Search, X } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import {
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -29,6 +30,7 @@ export default function TodoScreen() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [collapsedBlocks, setCollapsedBlocks] = useState<TimeBlock[]>([]);
 
@@ -44,8 +46,13 @@ const toggleBlock = (block: TimeBlock) => {
     setRefreshing(false);
   }, []);
 
-  const activeTasks = tasks.filter((t) => t.status !== 'done');
-  const completedTasks = tasks.filter((t) => t.status === 'done');
+  const allActiveTasks = tasks.filter((t) => t.status !== 'done');
+  const activeTasks = searchQuery.trim()
+    ? allActiveTasks.filter((t) => t.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    : allActiveTasks;
+  const completedTasks = tasks
+    .filter((t) => t.status === 'done')
+    .sort((a, b) => new Date(b.completed_at || 0).getTime() - new Date(a.completed_at || 0).getTime());
 
   const getTasksForBlock = (block: TimeBlock): Task[] => {
     return activeTasks
@@ -106,6 +113,23 @@ const toggleBlock = (block: TimeBlock) => {
           </Text>
           <Text style={styles.statLabel}>Done</Text>
         </View>
+      </View>
+
+      <View style={styles.searchBar}>
+        <Search color={Colors.textMuted} size={16} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search tasks..."
+          placeholderTextColor={Colors.textMuted}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          returnKeyType="search"
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <X color={Colors.textMuted} size={16} />
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView
@@ -426,6 +450,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: Colors.green,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.primary,
+    marginHorizontal: 20,
+    marginBottom: 8,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: Colors.textPrimary,
   },
   fab: {
     position: 'absolute',

@@ -12,6 +12,8 @@ export interface Profile {
   email: string;
   avatar_url: string | null;
   total_xp: number;
+  push_token: string | null;
+  onboarding_complete: boolean;
   created_at: string;
 }
 
@@ -166,6 +168,7 @@ export interface FeedItem {
   group_task_id: string | null;
   content: string | null;
   photo_url: string | null;
+  checkin_note: string | null;
   xp_earned: number;
   created_at: string;
   author?: Profile;

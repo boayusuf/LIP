@@ -1,5 +1,9 @@
+import * as Haptics from 'expo-haptics';
+import Svg, { Circle } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import AvatarImage from '../../components/AvatarImage';
 import {
   ArrowLeft,
   Camera,
@@ -10,7 +14,9 @@ import {
   Clock,
   Copy,
   LogOut,
+  Maximize2,
   MessageCircle,
+  Minimize2,
   Newspaper,
   Play,
   Plus,
@@ -22,25 +28,38 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   RefreshControl,
   ScrollView,
   Share,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import TimerDisplay from '../../components/TimerDisplay';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
 import { useGroupStore } from '../../lib/groupStore';
 import { useStore } from '../../lib/store';
 
 type Tab = 'tasks' | 'chat' | 'feed';
 
+function fmtSec(sec: number): string {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
 export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { session } = useStore();
   const {
     currentGroup,
@@ -65,6 +84,17 @@ export default function GroupDetailScreen() {
   const [showFullyCompleted, setShowFullyCompleted] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
 
+  // Photo preview state
+  type PendingComplete = { completionId: string; taskId: string; groupId: string; photoUri: string };
+  const [pendingPhoto, setPendingPhoto] = useState<PendingComplete | null>(null);
+
+  // Check-in note state
+  type PendingCheckin = { completionId: string; taskId: string; groupId: string; photoUri?: string };
+  const [checkinPending, setCheckinPending] = useState<PendingCheckin | null>(null);
+  const [checkinText, setCheckinText] = useState('');
+  const [focusGroupTaskId, setFocusGroupTaskId] = useState<string | null>(null);
+  const [focusGroupSeconds, setFocusGroupSeconds] = useState(0);
+
   useEffect(() => {
     if (id) {
       fetchGroupDetail(id);
@@ -72,6 +102,22 @@ export default function GroupDetailScreen() {
       fetchGroupTasks(id);
     }
   }, [id]);
+
+  const focusGroupTaskData = focusGroupTaskId ? groupTasks.find(t => t.id === focusGroupTaskId) : null;
+  const focusGroupCompletion = focusGroupTaskData?.my_completion ?? null;
+
+  useEffect(() => {
+    if (!focusGroupTaskId || !focusGroupCompletion) return;
+    const update = () => {
+      const extra = focusGroupCompletion.timer_started_at
+        ? Math.floor((Date.now() - new Date(focusGroupCompletion.timer_started_at).getTime()) / 1000)
+        : 0;
+      setFocusGroupSeconds((focusGroupCompletion.timer_elapsed_sec || 0) + extra);
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [focusGroupTaskId, focusGroupCompletion?.timer_started_at, focusGroupCompletion?.timer_elapsed_sec]);
 
   const onRefresh = useCallback(async () => {
     if (!id) return;
@@ -290,55 +336,74 @@ export default function GroupDetailScreen() {
                   <View style={styles.taskHeader}>
                     <Text style={styles.taskTitle}>{task.title}</Text>
                     <View style={styles.taskActions}>
-                      {isRunning ? (
-                        <TouchableOpacity style={styles.timerBtn} onPress={() => stopGroupTimer(completion.id)}>
-                          <Square color={Colors.priorityUrgent} size={16} />
-                        </TouchableOpacity>
-                      ) : (
-                        <TouchableOpacity style={styles.timerBtn} onPress={() => startGroupTimer(completion.id)}>
-                          <Play color={Colors.green} size={16} />
-                        </TouchableOpacity>
-                      )}
+                      <View style={styles.timerArea}>
+                        <TimerDisplay
+                          timerStartedAt={completion.timer_started_at}
+                          timerElapsedSec={completion.timer_elapsed_sec}
+                          estimatedMin={task.estimated_duration_min}
+                        />
+                        <View style={styles.timerBtns}>
+                          {isRunning ? (
+                            <TouchableOpacity style={styles.timerBtn} onPress={() => stopGroupTimer(completion.id)}>
+                              <Square color={Colors.priorityUrgent} size={16} />
+                            </TouchableOpacity>
+                          ) : (
+                            <TouchableOpacity style={styles.timerBtn} onPress={() => startGroupTimer(completion.id)}>
+                              <Play color={Colors.green} size={16} />
+                            </TouchableOpacity>
+                          )}
+                          <TouchableOpacity style={styles.timerBtn} onPress={() => setFocusGroupTaskId(task.id)}>
+                            <Maximize2 color={Colors.textMuted} size={14} />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
                       <TouchableOpacity
                         style={styles.completeBtn}
                         onPress={async () => {
+                          const pickPhoto = async (): Promise<string | null> => {
+                            return new Promise((resolve) => {
+                              Alert.alert('Photo Proof', 'Choose photo source', [
+                                {
+                                  text: 'Camera',
+                                  onPress: async () => {
+                                    const perm = await ImagePicker.requestCameraPermissionsAsync();
+                                    if (!perm.granted) {
+                                      Alert.alert('Permission needed', 'Please allow camera access in settings');
+                                      return resolve(null);
+                                    }
+                                    const result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: false });
+                                    resolve(!result.canceled && result.assets[0] ? result.assets[0].uri : null);
+                                  },
+                                },
+                                {
+                                  text: 'Gallery',
+                                  onPress: async () => {
+                                    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: false });
+                                    resolve(!result.canceled && result.assets[0] ? result.assets[0].uri : null);
+                                  },
+                                },
+                                { text: 'Cancel', style: 'cancel', onPress: () => resolve(null) },
+                              ]);
+                            });
+                          };
+
+                          let photoUri: string | undefined;
                           if (task.require_photo) {
-                            Alert.alert('Photo Proof', 'Choose photo source', [
-                              {
-                                text: 'Camera',
-                                onPress: async () => {
-                                  const perm = await ImagePicker.requestCameraPermissionsAsync();
-                                  if (!perm.granted) {
-                                    Alert.alert('Permission needed', 'Please allow camera access in settings');
-                                    return;
-                                  }
-                                  const result = await ImagePicker.launchCameraAsync({
-                                    quality: 0.7,
-                                    allowsEditing: false,
-                                  });
-                                  if (!result.canceled && result.assets[0]) {
-                                    await completeGroupTask(completion.id, task.id, task.group_id, result.assets[0].uri);
-                                  }
-                                },
-                              },
-                              {
-                                text: 'Gallery',
-                                onPress: async () => {
-                                  const result = await ImagePicker.launchImageLibraryAsync({
-                                    mediaTypes: ['images'],
-                                    quality: 0.7,
-                                    allowsEditing: false,
-                                  });
-                                  if (!result.canceled && result.assets[0]) {
-                                    await completeGroupTask(completion.id, task.id, task.group_id, result.assets[0].uri);
-                                  }
-                                },
-                              },
-                              { text: 'Cancel', style: 'cancel' },
-                            ]);
-                          } else {
-                            await completeGroupTask(completion.id, task.id, task.group_id);
+                            const uri = await pickPhoto();
+                            if (!uri) return;
+                            // Show photo preview
+                            setPendingPhoto({ completionId: completion.id, taskId: task.id, groupId: task.group_id, photoUri: uri });
+                            return;
                           }
+
+                          if (task.require_checkin) {
+                            setCheckinPending({ completionId: completion.id, taskId: task.id, groupId: task.group_id, photoUri });
+                            setCheckinText('');
+                            return;
+                          }
+
+                          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                          await completeGroupTask(completion.id, task.id, task.group_id);
                         }}
                       >
                         {task.require_photo ? (
@@ -363,12 +428,14 @@ export default function GroupDetailScreen() {
                           key={c.id}
                           style={[
                             styles.memberDot,
-                            { backgroundColor: c.status === 'done' ? Colors.green : Colors.border },
+                            { borderWidth: 2, borderColor: c.status === 'done' ? Colors.green : Colors.border },
                           ]}
                         >
-                          <Text style={styles.memberDotText}>
-                            {(c.profile?.name || c.profile?.email?.split('@')[0] || '?').charAt(0).toUpperCase()}
-                          </Text>
+                          <AvatarImage
+                            size={20}
+                            name={c.profile?.name || c.profile?.email?.split('@')[0] || '?'}
+                            avatarUrl={c.profile?.avatar_url ?? null}
+                          />
                         </View>
                       ))}
                     </View>
@@ -403,11 +470,13 @@ export default function GroupDetailScreen() {
                       {allCompletions.map((c: any) => (
                         <View
                           key={c.id}
-                          style={[styles.memberDot, { backgroundColor: c.status === 'done' ? Colors.green : Colors.border }]}
+                          style={[styles.memberDot, { borderWidth: 2, borderColor: c.status === 'done' ? Colors.green : Colors.border }]}
                         >
-                          <Text style={styles.memberDotText}>
-                            {(c.profile?.name || c.profile?.email?.split('@')[0] || '?').charAt(0).toUpperCase()}
-                          </Text>
+                          <AvatarImage
+                            size={20}
+                            name={c.profile?.name || c.profile?.email?.split('@')[0] || '?'}
+                            avatarUrl={c.profile?.avatar_url ?? null}
+                          />
                         </View>
                       ))}
                     </View>
@@ -434,21 +503,19 @@ export default function GroupDetailScreen() {
           </View>
         )}
 
-        {/* Leave */}
-        <View style={styles.section}>
-          <TouchableOpacity style={styles.leaveBtn} onPress={handleLeave}>
-            <LogOut color={Colors.priorityUrgent} size={16} />
-            <Text style={styles.leaveBtnText}>Leave Group</Text>
-          </TouchableOpacity>
-        </View>
-
         <View style={{ height: 100 }} />
       </ScrollView>
 
       {/* FAB */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => router.push(`/group/propose/${id}`)}
+        onPress={() => {
+          if (memberCount < 2) {
+            Alert.alert('Need more members', 'A group needs at least 2 members before proposing tasks.');
+            return;
+          }
+          router.push(`/group/propose/${id}`);
+        }}
         activeOpacity={0.8}
       >
         <Plus color={Colors.textPrimary} size={28} />
@@ -481,11 +548,12 @@ export default function GroupDetailScreen() {
             <ScrollView style={styles.membersList}>
               {members.map((m: any) => (
                 <View key={m.id} style={styles.memberItem}>
-                  <View style={styles.memberAvatar}>
-                    <Text style={styles.memberAvatarText}>
-                      {getMemberName(m).charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
+                  <AvatarImage
+                    size={40}
+                    name={getMemberName(m)}
+                    avatarUrl={m.profile?.avatar_url ?? null}
+                    style={{ marginRight: 12 }}
+                  />
                   <View style={styles.memberInfo}>
                     <Text style={styles.memberName}>{getMemberName(m)}</Text>
                     <Text style={styles.memberEmail}>{m.profile?.email || ''}</Text>
@@ -502,6 +570,210 @@ export default function GroupDetailScreen() {
             <TouchableOpacity style={styles.leaveBtn} onPress={handleLeave}>
               <LogOut color={Colors.priorityUrgent} size={16} />
               <Text style={styles.leaveBtnText}>Leave Group</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Photo Preview Modal */}
+      <Modal visible={!!pendingPhoto} animationType="fade" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { alignItems: 'center' }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Confirm Photo</Text>
+              <TouchableOpacity onPress={() => setPendingPhoto(null)}>
+                <X color={Colors.textPrimary} size={22} />
+              </TouchableOpacity>
+            </View>
+            {pendingPhoto && (
+              <Image
+                source={{ uri: pendingPhoto.photoUri }}
+                style={styles.photoPreview}
+                contentFit="cover"
+              />
+            )}
+            <View style={styles.photoPreviewActions}>
+              <TouchableOpacity
+                style={styles.photoRetakeBtn}
+                onPress={() => setPendingPhoto(null)}
+              >
+                <Text style={styles.photoRetakeBtnText}>Retake</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.photoConfirmBtn}
+                onPress={async () => {
+                  if (!pendingPhoto) return;
+                  const { completionId, taskId, groupId, photoUri } = pendingPhoto;
+                  setPendingPhoto(null);
+                  const task = groupTasks.find((t) => t.id === taskId);
+                  if (task?.require_checkin) {
+                    setCheckinPending({ completionId, taskId, groupId, photoUri });
+                    setCheckinText('');
+                  } else {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    await completeGroupTask(completionId, taskId, groupId, photoUri);
+                  }
+                }}
+              >
+                <Text style={styles.photoConfirmBtnText}>✓ Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Check-in Note Modal */}
+      <Modal visible={!!checkinPending} animationType="slide" transparent>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>✅ Check-in Note</Text>
+              <TouchableOpacity onPress={() => setCheckinPending(null)}>
+                <X color={Colors.textPrimary} size={22} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.checkinDesc}>
+              Describe what you did to complete this task:
+            </Text>
+            <TextInput
+              style={styles.checkinInput}
+              placeholder="e.g. Ran 5km in the park at 7am..."
+              placeholderTextColor={Colors.textMuted}
+              value={checkinText}
+              onChangeText={setCheckinText}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              autoFocus
+            />
+            <TouchableOpacity
+              style={[styles.checkinSubmitBtn, !checkinText.trim() && { opacity: 0.5 }]}
+              disabled={!checkinText.trim()}
+              onPress={async () => {
+                if (!checkinPending || !checkinText.trim()) return;
+                const { completionId, taskId, groupId, photoUri } = checkinPending;
+                setCheckinPending(null);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                await completeGroupTask(completionId, taskId, groupId, photoUri, checkinText.trim());
+                setCheckinText('');
+              }}
+            >
+              <Text style={styles.checkinSubmitBtnText}>Submit & Complete</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Group Task Focus Timer Modal */}
+      <Modal
+        visible={!!focusGroupTaskId}
+        animationType="fade"
+        onRequestClose={() => setFocusGroupTaskId(null)}
+      >
+        <View style={[styles.focusContainer, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+          <TouchableOpacity style={styles.focusMinimize} onPress={() => setFocusGroupTaskId(null)}>
+            <Minimize2 color={Colors.textMuted} size={20} />
+            <Text style={styles.focusMinimizeText}>Minimize</Text>
+          </TouchableOpacity>
+
+          {/* Task name pinned at top */}
+          <View style={styles.focusHeader}>
+            <Text style={styles.focusTitle} numberOfLines={2}>
+              {focusGroupTaskData?.title || ''}
+            </Text>
+            <Text style={styles.focusMeta}>
+              {focusGroupTaskData?.estimated_duration_min}min · {focusGroupTaskData?.priority?.toUpperCase()}
+            </Text>
+          </View>
+
+          <View style={styles.focusContent}>
+            {(() => {
+              const estSec = (focusGroupTaskData?.estimated_duration_min || 0) * 60;
+              const isGRunning = !!focusGroupCompletion?.timer_started_at;
+              const isGOver = focusGroupSeconds > estSec;
+              const ringColor = isGOver ? Colors.red : isGRunning ? Colors.accent : Colors.textSecondary;
+              const circumference = 2 * Math.PI * 140;
+              const offset = circumference * (1 - Math.min(focusGroupSeconds / Math.max(estSec, 1), 1));
+              return (
+                <View style={styles.ringContainer}>
+                  <Svg width={320} height={320} viewBox="0 0 320 320">
+                    <Circle cx={160} cy={160} r={140} stroke={Colors.border} strokeWidth={14} fill="none" />
+                    <Circle
+                      cx={160} cy={160} r={140}
+                      stroke={ringColor}
+                      strokeWidth={14}
+                      fill="none"
+                      strokeDasharray={`${circumference}`}
+                      strokeDashoffset={`${offset}`}
+                      strokeLinecap="round"
+                      transform="rotate(-90 160 160)"
+                    />
+                  </Svg>
+                  <View style={styles.ringCenter}>
+                    <Text style={[styles.focusTimer, { color: ringColor }]}>
+                      {fmtSec(focusGroupSeconds)}
+                    </Text>
+                    <Text style={styles.focusEstimate}>/ {fmtSec(estSec)}</Text>
+                  </View>
+                </View>
+              );
+            })()}
+          </View>
+
+          <View style={styles.focusActions}>
+            <TouchableOpacity
+              style={[styles.focusBtn, focusGroupCompletion?.timer_started_at ? styles.focusBtnStop : styles.focusBtnStart]}
+              onPress={() => {
+                if (!focusGroupCompletion) return;
+                if (focusGroupCompletion.timer_started_at) {
+                  stopGroupTimer(focusGroupCompletion.id);
+                } else {
+                  startGroupTimer(focusGroupCompletion.id);
+                }
+              }}
+            >
+              {focusGroupCompletion?.timer_started_at ? (
+                <Square color={Colors.textPrimary} size={20} fill={Colors.textPrimary} />
+              ) : (
+                <Play color={Colors.textPrimary} size={20} fill={Colors.textPrimary} />
+              )}
+              <Text style={styles.focusBtnText}>
+                {focusGroupCompletion?.timer_started_at ? 'Pause' : 'Start'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.focusBtnComplete,
+                !(focusGroupTaskData?.require_photo || focusGroupTaskData?.require_checkin)
+                  && { backgroundColor: Colors.green },
+              ]}
+              onPress={async () => {
+                setFocusGroupTaskId(null);
+                if (focusGroupTaskData?.require_photo || focusGroupTaskData?.require_checkin) return;
+                if (!focusGroupCompletion || !focusGroupTaskData) return;
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                await completeGroupTask(
+                  focusGroupCompletion.id,
+                  focusGroupTaskData.id,
+                  focusGroupTaskData.group_id,
+                );
+              }}
+            >
+              {focusGroupTaskData?.require_photo || focusGroupTaskData?.require_checkin ? (
+                <>
+                  <Minimize2 color={Colors.textPrimary} size={20} />
+                  <Text style={styles.focusBtnText}>Back</Text>
+                </>
+              ) : (
+                <>
+                  <Check color={Colors.textPrimary} size={20} />
+                  <Text style={styles.focusBtnText}>Done</Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -585,9 +857,12 @@ export default function GroupDetailScreen() {
                     : null;
                   return (
                     <View key={c.id} style={styles.memberProgressItem}>
-                      <View style={[styles.memberProgressDot, { backgroundColor: isDone ? Colors.green : Colors.border }]}>
-                        <Text style={styles.memberProgressDotText}>{name.charAt(0).toUpperCase()}</Text>
-                      </View>
+                      <AvatarImage
+                        size={32}
+                        name={name}
+                        avatarUrl={c.profile?.avatar_url ?? null}
+                        style={{ marginRight: 10, borderWidth: 2, borderColor: isDone ? Colors.green : Colors.border }}
+                      />
                       <View style={styles.memberProgressInfo}>
                         <Text style={[styles.memberProgressName, isDone && { color: Colors.green }]}>{name}</Text>
                         {isDone && completedTime && (
@@ -676,7 +951,9 @@ const styles = StyleSheet.create({
   taskTitle: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary, flex: 1 },
   taskTitleDone: { fontSize: 14, color: Colors.textMuted, textDecorationLine: 'line-through' },
   taskXP: { fontSize: 13, fontWeight: '600', color: Colors.gold, marginTop: 4 },
-  taskActions: { flexDirection: 'row', gap: 8 },
+  taskActions: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  timerArea: { alignItems: 'flex-end', gap: 4 },
+  timerBtns: { flexDirection: 'row', gap: 4 },
   timerBtn: {
     padding: 8, borderRadius: 8, backgroundColor: Colors.background,
     borderWidth: 1, borderColor: Colors.border,
@@ -765,4 +1042,46 @@ const styles = StyleSheet.create({
   memberProgressInfo: { flex: 1 },
   memberProgressName: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
   memberProgressTime: { fontSize: 12, color: Colors.textMuted, marginTop: 1 },
+  // Photo preview modal
+  photoPreview: { width: '100%', height: 260, borderRadius: 12, marginBottom: 16 },
+  photoPreviewActions: { flexDirection: 'row', gap: 12, width: '100%' },
+  photoRetakeBtn: {
+    flex: 1, paddingVertical: 12, borderRadius: 10,
+    borderWidth: 1, borderColor: Colors.border, alignItems: 'center',
+  },
+  photoRetakeBtnText: { fontSize: 15, fontWeight: '600', color: Colors.textSecondary },
+  photoConfirmBtn: {
+    flex: 1, paddingVertical: 12, borderRadius: 10,
+    backgroundColor: Colors.green, alignItems: 'center',
+  },
+  photoConfirmBtnText: { fontSize: 15, fontWeight: '700', color: Colors.background },
+  // Check-in modal
+  checkinDesc: { fontSize: 14, color: Colors.textSecondary, marginBottom: 12, lineHeight: 20 },
+  checkinInput: {
+    backgroundColor: Colors.inputBg, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 10, padding: 14, fontSize: 15, color: Colors.textPrimary,
+    minHeight: 100, marginBottom: 16,
+  },
+  checkinSubmitBtn: {
+    backgroundColor: Colors.accent, paddingVertical: 14, borderRadius: 10, alignItems: 'center',
+  },
+  checkinSubmitBtnText: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
+  // Focus timer modal
+  focusContainer: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 24 },
+  focusMinimize: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 16 },
+  focusMinimizeText: { fontSize: 14, color: Colors.textMuted },
+  focusHeader: { alignItems: 'center', paddingTop: 8, paddingBottom: 16 },
+  focusContent: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  focusTitle: { fontSize: 26, fontWeight: '700', color: Colors.textPrimary, textAlign: 'center', lineHeight: 32, marginBottom: 8 },
+  focusMeta: { fontSize: 14, color: Colors.textMuted, marginBottom: 0 },
+  ringContainer: { width: 320, height: 320, alignItems: 'center', justifyContent: 'center' },
+  ringCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
+  focusTimer: { fontSize: 52, fontWeight: '700', color: Colors.textSecondary, fontVariant: ['tabular-nums'], letterSpacing: 2 },
+  focusEstimate: { fontSize: 16, color: Colors.textMuted, marginTop: 8 },
+  focusActions: { flexDirection: 'row', gap: 12, paddingBottom: 24 },
+  focusBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 18, borderRadius: 16 },
+  focusBtnStart: { backgroundColor: Colors.accent },
+  focusBtnStop: { backgroundColor: Colors.red },
+  focusBtnComplete: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 18, borderRadius: 16, backgroundColor: Colors.primary, borderWidth: 1, borderColor: Colors.border },
+  focusBtnText: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
 });

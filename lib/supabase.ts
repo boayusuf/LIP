@@ -4,8 +4,8 @@
 import { createClient } from '@supabase/supabase-js';
 import 'react-native-url-polyfill/auto';
 
-const SUPABASE_URL = 'https://pqutvodazvoxgbwzdgsv.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxdXR2b2RhenZveGdid3pkZ3N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4NjQ1MjAsImV4cCI6MjA4NjQ0MDUyMH0.naN87-fo3yQJIqe3n3n00AEcfsdCgzhMhmwAxZKLfVY';
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? 'https://pqutvodazvoxgbwzdgsv.supabase.co';
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxdXR2b2RhenZveGdid3pkZ3N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4NjQ1MjAsImV4cCI6MjA4NjQ0MDUyMH0.naN87-fo3yQJIqe3n3n00AEcfsdCgzhMhmwAxZKLfVY';
 
 const customStorage = {
   getItem: async (key: string) => {
