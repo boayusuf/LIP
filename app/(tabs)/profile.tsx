@@ -15,7 +15,9 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  Animated,
   Dimensions,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -33,16 +35,21 @@ import { supabase } from '../../lib/supabase';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 const LEVELS = [
-  { level: 1, name: 'Beginner', minXP: 0 },
-  { level: 2, name: 'Starter', minXP: 100 },
-  { level: 3, name: 'Committed', minXP: 300 },
-  { level: 4, name: 'Consistent', minXP: 600 },
-  { level: 5, name: 'Dedicated', minXP: 1000 },
-  { level: 6, name: 'Focused', minXP: 1500 },
-  { level: 7, name: 'Driven', minXP: 2200 },
-  { level: 8, name: 'Unstoppable', minXP: 3000 },
-  { level: 9, name: 'Elite', minXP: 4000 },
-  { level: 10, name: 'Legend', minXP: 5500 },
+  { level: 1,  name: 'Beginner',   minXP: 0 },
+  { level: 2,  name: 'Focused',    minXP: 300 },
+  { level: 3,  name: 'Consistent', minXP: 700 },
+  { level: 4,  name: 'Dedicated',  minXP: 1300 },
+  { level: 5,  name: 'Driven',     minXP: 2200 },
+  { level: 6,  name: 'Sharp',      minXP: 3500 },
+  { level: 7,  name: 'Expert',     minXP: 5500 },
+  { level: 8,  name: 'Master',     minXP: 8000 },
+  { level: 9,  name: 'Elite',      minXP: 11500 },
+  { level: 10, name: 'Champion',   minXP: 16000 },
+  { level: 11, name: 'Warrior',    minXP: 22000 },
+  { level: 12, name: 'Legend',     minXP: 30000 },
+  { level: 13, name: 'Mythic',     minXP: 40000 },
+  { level: 14, name: 'Titan',      minXP: 55000 },
+  { level: 15, name: 'Apex',       minXP: 75000 },
 ];
 
 function getLevel(xp: number) {
@@ -202,6 +209,9 @@ export default function ProfileScreen() {
   const [newName, setNewName] = useState('');
   const [stats, setStats] = useState({ tasksCompleted: 0, streak: 0, joined: '' });
   const [heatmapData, setHeatmapData] = useState<HeatmapData>({});
+  const [levelUpData, setLevelUpData] = useState<{ level: number; name: string } | null>(null);
+  const prevLevelRef = useRef<number | null>(null);
+  const levelUpScale = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     fetchProfile();
@@ -209,6 +219,24 @@ export default function ProfileScreen() {
     loadStats();
     loadHeatmap();
   }, []);
+
+  const totalXP = profile?.total_xp || 0;
+  const level = getLevel(totalXP);
+
+  useEffect(() => {
+    if (prevLevelRef.current === null) {
+      prevLevelRef.current = level.level;
+      return;
+    }
+    if (level.level > prevLevelRef.current) {
+      prevLevelRef.current = level.level;
+      levelUpScale.setValue(0);
+      setLevelUpData({ level: level.level, name: level.name });
+      Animated.spring(levelUpScale, { toValue: 1, useNativeDriver: true, tension: 60, friction: 7 }).start();
+    } else {
+      prevLevelRef.current = level.level;
+    }
+  }, [level.level]);
 
   const loadHeatmap = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -366,12 +394,23 @@ export default function ProfileScreen() {
     ]);
   };
 
-  const totalXP = profile?.total_xp || 0;
-  const level = getLevel(totalXP);
   const displayName = profile?.name || profile?.email?.split('@')[0] || 'User';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Level-up modal */}
+      <Modal visible={!!levelUpData} transparent animationType="none" onRequestClose={() => setLevelUpData(null)}>
+        <TouchableOpacity style={styles.levelUpOverlay} activeOpacity={1} onPress={() => setLevelUpData(null)}>
+          <Animated.View style={[styles.levelUpCard, { transform: [{ scale: levelUpScale }] }]}>
+            <Text style={styles.levelUpEmoji}>⚡</Text>
+            <Text style={styles.levelUpTitle}>LEVEL UP!</Text>
+            <Text style={styles.levelUpLevel}>Level {levelUpData?.level}</Text>
+            <Text style={styles.levelUpName}>{levelUpData?.name}</Text>
+            <Text style={styles.levelUpHint}>Tap to dismiss</Text>
+          </Animated.View>
+        </TouchableOpacity>
+      </Modal>
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Profile</Text>
@@ -589,4 +628,19 @@ const styles = StyleSheet.create({
   },
   coachHeader: { fontSize: 14, fontWeight: '700', color: Colors.accent, marginBottom: 8 },
   coachMessage: { fontSize: 14, color: Colors.textSecondary, lineHeight: 22 },
+  levelUpOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.75)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  levelUpCard: {
+    backgroundColor: Colors.primary, borderRadius: 24, padding: 36,
+    alignItems: 'center', borderWidth: 2, borderColor: Colors.gold,
+    shadowColor: Colors.gold, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 20,
+    minWidth: 240,
+  },
+  levelUpEmoji: { fontSize: 52, marginBottom: 8 },
+  levelUpTitle: { fontSize: 22, fontWeight: '900', color: Colors.gold, letterSpacing: 3, marginBottom: 12 },
+  levelUpLevel: { fontSize: 48, fontWeight: '800', color: Colors.textPrimary, lineHeight: 52 },
+  levelUpName: { fontSize: 20, fontWeight: '700', color: Colors.accent, marginTop: 4, marginBottom: 20 },
+  levelUpHint: { fontSize: 12, color: Colors.textMuted },
 });

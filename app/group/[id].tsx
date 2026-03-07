@@ -53,7 +53,16 @@ function fmtSec(sec: number): string {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-type CheckinStatus = 'none' | 'upcoming' | 'open' | 'closed';
+const GROUP_LEVELS = [0, 300, 700, 1300, 2200, 3500, 5500, 8000, 11500, 16000, 22000, 30000, 40000, 55000, 75000];
+function getGroupLevel(xp: number): number {
+  let lvl = 1;
+  for (let i = 0; i < GROUP_LEVELS.length; i++) {
+    if (xp >= GROUP_LEVELS[i]) lvl = i + 1; else break;
+  }
+  return lvl;
+}
+
+type CheckinStatus = 'none' | 'too_early' | 'upcoming' | 'open' | 'closed';
 function getCheckinStatus(task: any): { status: CheckinStatus; label: string } {
   if (!task?.require_checkin || !task?.checkin_time) return { status: 'none', label: '' };
   const [h, m] = task.checkin_time.split(':').map(Number);
@@ -65,6 +74,8 @@ function getCheckinStatus(task: any): { status: CheckinStatus; label: string } {
   const closeM = (m + buf) % 60;
   const openStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   const closeStr = `${String(closeH).padStart(2, '0')}:${String(closeM).padStart(2, '0')}`;
+  const tooEarlyThreshold = new Date(opens.getTime() - 60 * 60000);
+  if (now < tooEarlyThreshold) return { status: 'too_early', label: `Opens at ${openStr}` };
   if (now < opens) return { status: 'upcoming', label: `Opens ${openStr}–${closeStr}` };
   if (now < closes) return { status: 'open', label: `Open until ${closeStr}` };
   return { status: 'closed', label: `Closed at ${closeStr}` };
@@ -91,9 +102,11 @@ export default function GroupDetailScreen() {
 
   const [activeTab, setActiveTab] = useState<Tab>('tasks');
   const [refreshing, setRefreshing] = useState(false);
+  const [, setCheckinTick] = useState(0);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [showVotes, setShowVotes] = useState(true);
   const [showActive, setShowActive] = useState(true);
+  const [showUpcoming, setShowUpcoming] = useState(true);
   const [showCompleted, setShowCompleted] = useState(false);
   const [showFullyCompleted, setShowFullyCompleted] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
@@ -104,6 +117,12 @@ export default function GroupDetailScreen() {
 
   const [focusGroupTaskId, setFocusGroupTaskId] = useState<string | null>(null);
   const [focusGroupSeconds, setFocusGroupSeconds] = useState(0);
+
+  // Re-render every 30s so check-in window badges update automatically
+  useEffect(() => {
+    const t = setInterval(() => setCheckinTick(n => n + 1), 30000);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     if (id) {
@@ -174,7 +193,19 @@ export default function GroupDetailScreen() {
   const memberCount = currentGroup?.member_count || 0;
   const members = currentGroup?.members || [];
 
-  const myActiveTasks = groupTasks.filter((t) => t.my_completion?.status !== 'done');
+  const myActiveTasks = groupTasks.filter((t) => {
+    if (t.my_completion?.status === 'done') return false;
+    if (t.require_checkin && t.checkin_time) {
+      const { status } = getCheckinStatus(t);
+      if (status === 'closed' || status === 'too_early') return false;
+    }
+    return true;
+  });
+  const upcomingCheckins = groupTasks.filter((t) => {
+    if (t.my_completion?.status === 'done') return false;
+    if (!t.require_checkin || !t.checkin_time) return false;
+    return getCheckinStatus(t).status === 'too_early';
+  });
   const awaitingOthers = groupTasks.filter((t) => {
     if (t.my_completion?.status !== 'done') return false;
     const all = t.all_completions || [];
@@ -216,7 +247,7 @@ export default function GroupDetailScreen() {
         <TouchableOpacity style={styles.headerCenter} onPress={() => setShowGroupInfo(true)}>
           <Text style={styles.headerTitle} numberOfLines={1}>{currentGroup.name}</Text>
           <Text style={styles.headerSub}>
-            {memberCount} members{(currentGroup as any).group_streak > 0 ? ` · 🔥 ${(currentGroup as any).group_streak} day streak` : ''} · tap for info
+            {memberCount} members{(currentGroup as any).group_streak > 0 ? ` · 🔥 ${(currentGroup as any).group_streak} day streak` : ''}{currentGroup.group_xp ? ` · ⭐ Lvl ${getGroupLevel(currentGroup.group_xp)}` : ''} · tap for info
           </Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={handleShareCode} style={styles.codeBtn}>
@@ -341,35 +372,58 @@ export default function GroupDetailScreen() {
               const allCompletions = task.all_completions || [];
               const doneCount = allCompletions.filter((c: any) => c.status === 'done').length;
               const totalCount = allCompletions.length;
+              const checkinStatus = task.require_checkin && task.checkin_time ? getCheckinStatus(task) : null;
+              const checkinDisabled = !!(checkinStatus && ['closed', 'too_early'].includes(checkinStatus.status));
               return (
                 <TouchableOpacity key={task.id} style={styles.taskCard} onPress={() => setSelectedTask(task)}>
+                  {/* Check-in banner */}
+                  {task.require_checkin && task.checkin_time && (() => {
+                    const [h, m] = task.checkin_time.split(':').map(Number);
+                    const buf = task.checkin_buffer_min ?? 15;
+                    const closeTotal = h * 60 + m + buf;
+                    const openStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+                    const closeStr = `${String(Math.floor(closeTotal/60)%24).padStart(2,'0')}:${String(closeTotal%60).padStart(2,'0')}`;
+                    const cs = checkinStatus!;
+                    const bannerColor = cs.status === 'open' ? Colors.green : cs.status === 'closed' ? Colors.priorityUrgent : cs.status === 'upcoming' ? Colors.accent : Colors.textMuted;
+                    return (
+                      <View style={[styles.checkinBanner, { borderColor: bannerColor + '50', backgroundColor: bannerColor + '15' }]}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.checkinBannerLabel, { color: bannerColor }]}>📍 CHECK IN</Text>
+                          <Text style={styles.checkinBannerTime}>{openStr} – {closeStr} · {buf}min window</Text>
+                        </View>
+                        <Text style={[styles.checkinBannerStatus, { color: bannerColor }]}>{cs.label}</Text>
+                      </View>
+                    );
+                  })()}
                   <View style={styles.taskHeader}>
                     <Text style={styles.taskTitle}>{task.title}</Text>
                     <View style={styles.taskActions}>
-                      <View style={styles.timerArea}>
-                        <TimerDisplay
-                          timerStartedAt={completion.timer_started_at}
-                          timerElapsedSec={completion.timer_elapsed_sec}
-                          estimatedMin={task.estimated_duration_min}
-                        />
-                        <View style={styles.timerBtns}>
-                          {isRunning ? (
-                            <TouchableOpacity style={styles.timerBtn} onPress={() => stopGroupTimer(completion.id)}>
-                              <Square color={Colors.priorityUrgent} size={16} />
+                      {!task.require_checkin && (
+                        <View style={styles.timerArea}>
+                          <TimerDisplay
+                            timerStartedAt={completion.timer_started_at}
+                            timerElapsedSec={completion.timer_elapsed_sec}
+                            estimatedMin={task.estimated_duration_min}
+                          />
+                          <View style={styles.timerBtns}>
+                            {isRunning ? (
+                              <TouchableOpacity style={styles.timerBtn} onPress={() => stopGroupTimer(completion.id)}>
+                                <Square color={Colors.priorityUrgent} size={16} />
+                              </TouchableOpacity>
+                            ) : (
+                              <TouchableOpacity style={styles.timerBtn} onPress={() => startGroupTimer(completion.id)}>
+                                <Play color={Colors.green} size={16} />
+                              </TouchableOpacity>
+                            )}
+                            <TouchableOpacity style={styles.timerBtn} onPress={() => setFocusGroupTaskId(task.id)}>
+                              <Maximize2 color={Colors.textMuted} size={14} />
                             </TouchableOpacity>
-                          ) : (
-                            <TouchableOpacity style={styles.timerBtn} onPress={() => startGroupTimer(completion.id)}>
-                              <Play color={Colors.green} size={16} />
-                            </TouchableOpacity>
-                          )}
-                          <TouchableOpacity style={styles.timerBtn} onPress={() => setFocusGroupTaskId(task.id)}>
-                            <Maximize2 color={Colors.textMuted} size={14} />
-                          </TouchableOpacity>
+                          </View>
                         </View>
-                      </View>
+                      )}
                       <TouchableOpacity
-                        style={[styles.completeBtn, task.require_checkin && task.checkin_time && getCheckinStatus(task).status === 'closed' && { opacity: 0.3 }]}
-                        disabled={!!(task.require_checkin && task.checkin_time && getCheckinStatus(task).status === 'closed')}
+                        style={[styles.completeBtn, task.require_checkin && styles.checkinCompleteBtn, checkinDisabled && { opacity: 0.3 }]}
+                        disabled={checkinDisabled}
                         onPress={async () => {
                           const pickPhoto = async (): Promise<string | null> => {
                             return new Promise((resolve) => {
@@ -412,6 +466,10 @@ export default function GroupDetailScreen() {
                               Alert.alert('Check-in closed', `The check-in window has closed (${cs.label}).`);
                               return;
                             }
+                            if (cs.status === 'too_early') {
+                              Alert.alert('Too early', `Check-in ${cs.label}.`);
+                              return;
+                            }
                           }
 
                           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -429,11 +487,12 @@ export default function GroupDetailScreen() {
                   <Text style={styles.taskMeta}>
                     {task.estimated_duration_min}min · {task.priority} · {task.time_block}
                     {task.require_photo ? ' · 📸' : ''}
+                    {task.require_checkin ? ' · 📍' : ''}
                   </Text>
                   {task.require_checkin && (() => {
                     const cs = getCheckinStatus(task);
-                    if (cs.status === 'none') return <Text style={styles.checkinBadgeOpen}>✅ Check-in anytime</Text>;
-                    const color = cs.status === 'closed' ? Colors.priorityUrgent : cs.status === 'open' ? Colors.green : Colors.textMuted;
+                    if (cs.status === 'none') return null;
+                    const color = cs.status === 'closed' || cs.status === 'too_early' ? Colors.priorityUrgent : cs.status === 'open' ? Colors.green : Colors.textMuted;
                     return <Text style={[styles.checkinBadge, { color }]}>✅ {cs.label}</Text>;
                   })()}
                   {/* Member progress */}
@@ -448,7 +507,7 @@ export default function GroupDetailScreen() {
                           key={c.id}
                           style={[
                             styles.memberDot,
-                            { borderWidth: 2, borderColor: missed ? Colors.priorityUrgent : c.status === 'done' ? Colors.green : Colors.border },
+                            { borderWidth: 2, borderColor: c.late_checkin ? '#FF9500' : missed ? Colors.priorityUrgent : c.status === 'done' ? Colors.green : Colors.border },
                           ]}
                         >
                           <AvatarImage
@@ -466,6 +525,36 @@ export default function GroupDetailScreen() {
             })
           ))}
         </View>
+
+        {/* Upcoming Check-ins */}
+        {upcomingCheckins.length > 0 && (
+          <View style={styles.section}>
+            <TouchableOpacity style={styles.sectionHeader} onPress={() => setShowUpcoming(!showUpcoming)}>
+              {showUpcoming ? <ChevronDown color={Colors.textSecondary} size={18} /> : <ChevronRight color={Colors.textSecondary} size={18} />}
+              <Text style={styles.sectionTitle}>📍 Upcoming Check-ins ({upcomingCheckins.length})</Text>
+            </TouchableOpacity>
+            {showUpcoming && upcomingCheckins.map((task) => {
+              const [h, m] = task.checkin_time!.split(':').map(Number);
+              const buf = task.checkin_buffer_min ?? 15;
+              const closeTotal = h * 60 + m + buf;
+              const openStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+              const closeStr = `${String(Math.floor(closeTotal / 60) % 24).padStart(2, '0')}:${String(closeTotal % 60).padStart(2, '0')}`;
+              return (
+                <View key={task.id} style={[styles.taskCard, styles.upcomingCard]}>
+                  <View style={styles.taskHeader}>
+                    <Text style={styles.taskTitle}>{task.title}</Text>
+                    <View style={[styles.checkinBanner, { borderColor: Colors.textMuted + '40', backgroundColor: Colors.textMuted + '10', marginBottom: 0, flex: 0 }]}>
+                      <Text style={[styles.checkinBannerLabel, { color: Colors.textMuted }]}>📍</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.taskMeta}>
+                    {task.estimated_duration_min}min · {task.priority} · Opens {openStr}–{closeStr}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        )}
 
         {/* Completed */}
         {/* Awaiting Others */}
@@ -564,6 +653,15 @@ export default function GroupDetailScreen() {
                 <Copy color={Colors.accent} size={14} />
               </TouchableOpacity>
             </View>
+
+            {currentGroup.group_xp !== undefined && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Group Level</Text>
+                <Text style={styles.infoValue}>
+                  ⭐ Level {getGroupLevel(currentGroup.group_xp)} · {currentGroup.group_xp} XP
+                </Text>
+              </View>
+            )}
 
             <Text style={styles.membersTitle}>Members ({memberCount})</Text>
             <ScrollView style={styles.membersList}>
@@ -800,12 +898,20 @@ export default function GroupDetailScreen() {
               {selectedTask?.require_checkin && (
                 <View style={styles.flagItem}>
                   <CheckCircle color={Colors.accent} size={16} />
-                  <Text style={styles.flagText}>Check-in required</Text>
+                  <Text style={styles.flagText}>
+                    Check-in required{selectedTask.checkin_time
+                      ? ` · ${selectedTask.checkin_time} · ${selectedTask.checkin_buffer_min ?? 15}min window`
+                      : ''}
+                  </Text>
                 </View>
               )}
               {selectedTask?.repeat_cycle && (
                 <View style={styles.flagItem}>
-                  <Text style={styles.flagText}>🔄 Repeats: {selectedTask.repeat_cycle}</Text>
+                  <Text style={styles.flagText}>
+                    🔄 {selectedTask.repeat_cycle === 'custom' && selectedTask.repeat_interval_days
+                      ? `every ${selectedTask.repeat_interval_days} day${selectedTask.repeat_interval_days > 1 ? 's' : ''}`
+                      : selectedTask.repeat_cycle}
+                  </Text>
                 </View>
               )}
             </View>
@@ -942,6 +1048,16 @@ const styles = StyleSheet.create({
   taskMeta: { fontSize: 12, color: Colors.textMuted, marginTop: 6 },
   checkinBadge: { fontSize: 11, fontWeight: '600', marginTop: 4 },
   checkinBadgeOpen: { fontSize: 11, fontWeight: '600', marginTop: 4, color: Colors.textMuted },
+  upcomingCard: { opacity: 0.75, borderStyle: 'dashed' },
+  checkinBanner: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7,
+    marginBottom: 8,
+  },
+  checkinBannerLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+  checkinBannerTime: { fontSize: 12, color: Colors.textMuted, marginTop: 1 },
+  checkinBannerStatus: { fontSize: 11, fontWeight: '700' },
+  checkinCompleteBtn: { width: 40, height: 40, borderRadius: 8 },
   leaveBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: Colors.priorityUrgent + '40',
@@ -970,6 +1086,7 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: 14, color: Colors.textMuted },
   infoCodeBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   infoCode: { fontSize: 16, fontWeight: '700', color: Colors.accent, letterSpacing: 2 },
+  infoValue: { fontSize: 14, fontWeight: '600', color: Colors.gold },
   membersTitle: { fontSize: 15, fontWeight: '700', color: Colors.textSecondary, marginBottom: 12 },
   membersList: { maxHeight: 300, marginBottom: 16 },
   memberItem: {

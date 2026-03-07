@@ -4,7 +4,7 @@ export type TaskStatus = 'todo' | 'doing' | 'done';
 export type SubtaskStatus = 'todo' | 'done';
 export type RepeatCycle = 'daily' | 'weekly' | 'weekdays' | 'biweekly' | 'monthly' | 'custom' | null;
 export type ProposalStatus = 'pending' | 'approved' | 'rejected';
-export type FeedType = 'task_completed' | 'photo_checkin' | 'streak' | 'joined';
+export type FeedType = 'task_completed' | 'photo_checkin' | 'checkin_completed' | 'streak' | 'joined' | 'checkin_summary';
 
 export interface Profile {
   id: string;
@@ -78,6 +78,8 @@ export interface Group {
   members?: GroupMember[];
   last_message?: string | null;
   last_message_at?: string | null;
+  group_streak?: number;
+  group_xp?: number;
 }
 
 export interface GroupMember {
@@ -165,6 +167,7 @@ export interface Message {
   created_at: string;
   sender?: Profile;
   reply_to?: Message;
+  read_by?: string[]; // user IDs who have read this message
 }
 
 export interface FeedItem {

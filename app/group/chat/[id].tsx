@@ -33,6 +33,8 @@ export default function ChatScreen() {
     sendMessage,
     subscribeToMessages,
     fetchGroupDetail,
+    markMessagesRead,
+    setActiveChatGroupId,
   } = useGroupStore();
 
   const [text, setText] = useState('');
@@ -45,19 +47,16 @@ export default function ChatScreen() {
 
   useEffect(() => {
     if (id) {
+      setActiveChatGroupId(id);
       fetchGroupDetail(id);
-      fetchMessages(id);
+      fetchMessages(id).then(() => markMessagesRead(id));
       const unsub = subscribeToMessages(id);
-      return unsub;
+      return () => { setActiveChatGroupId(null); unsub(); };
     }
   }, [id]);
 
   useEffect(() => {
-    if (messages.length > 0) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-    }
+    if (messages.length > 0 && id) markMessagesRead(id);
   }, [messages.length]);
 
   // @mention autocomplete
@@ -151,7 +150,14 @@ export default function ChatScreen() {
               </View>
             )}
             <Text style={styles.msgText}>{renderMentions(item.content)}</Text>
-            <Text style={[styles.msgTime, isMine && styles.msgTimeMine]}>{formatTime(item.created_at)}</Text>
+            <View style={styles.msgFooter}>
+              <Text style={[styles.msgTime, isMine && styles.msgTimeMine]}>{formatTime(item.created_at)}</Text>
+              {isMine && (
+                <Text style={[styles.readCheck, (item.read_by || []).some(uid => uid !== userId) && styles.readCheckDone]}>
+                  {(item.read_by || []).some(uid => uid !== userId) ? '✓✓' : '✓'}
+                </Text>
+              )}
+            </View>
           </View>
         </View>
       </Swipeable>
@@ -182,9 +188,8 @@ export default function ChatScreen() {
         style={styles.messageList}
         contentContainerStyle={styles.messageContent}
         keyboardShouldPersistTaps="handled"
-        onContentSizeChange={() =>
-          flatListRef.current?.scrollToEnd({ animated: false })
-        }
+        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+        onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
         ListEmptyComponent={
           <View style={styles.emptyChat}>
             <Text style={styles.emptyChatEmoji}>💬</Text>
@@ -301,7 +306,7 @@ const styles = StyleSheet.create({
   replyName: { fontSize: 11, fontWeight: '600', color: Colors.accent },
   replyText: { fontSize: 12, color: Colors.textMuted },
   msgText: { fontSize: 15, color: Colors.textPrimary, lineHeight: 20 },
-  msgTime: { fontSize: 10, color: Colors.textMuted, marginTop: 4, alignSelf: 'flex-end' },
+  msgTime: { fontSize: 10, color: Colors.textMuted, alignSelf: 'flex-end' },
   msgTimeMine: { color: 'rgba(255,255,255,0.55)' },
   replyBar: {
     flexDirection: 'row', alignItems: 'center',
@@ -344,4 +349,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   sendBtnDisabled: { backgroundColor: Colors.primary },
+  msgFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 4 },
+  readCheck: { fontSize: 11, color: 'rgba(255,255,255,0.4)' },
+  readCheckDone: { color: 'rgba(255,255,255,0.9)' },
 });

@@ -6,11 +6,13 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import InAppNotification from '../components/InAppNotification';
 import { Colors } from '../constants/Colors';
+import { useGroupStore } from '../lib/groupStore';
 import { useStore } from '../lib/store';
 import { supabase } from '../lib/supabase';
 
 export default function RootLayout() {
   const { session, loading, profile, setSession, fetchProfile, fetchTasks, resetRepeatingTasks, registerPushToken } = useStore();
+  const { groups, dmGroups, fetchGroups, fetchDMs, subscribeForNotifications } = useGroupStore();
   const segments = useSegments();
   const router = useRouter();
 
@@ -29,8 +31,18 @@ export default function RootLayout() {
       fetchProfile();
       fetchTasks().then(() => resetRepeatingTasks());
       registerPushToken();
+      fetchGroups();
+      fetchDMs();
     }
   }, [session]);
+
+  // Persistent notification subscriptions for all groups
+  useEffect(() => {
+    const allIds = [...groups, ...dmGroups].map(g => g.id);
+    if (allIds.length === 0) return;
+    const unsub = subscribeForNotifications(allIds);
+    return unsub;
+  }, [groups.map(g => g.id).join(','), dmGroups.map(g => g.id).join(',')]);
 
   useEffect(() => {
     if (loading) return;

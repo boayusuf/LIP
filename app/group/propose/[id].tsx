@@ -40,10 +40,15 @@ const REPEAT_OPTIONS: { value: RepeatCycle; label: string }[] = [
   { value: 'weekly', label: 'Weekly' },
   { value: 'biweekly', label: 'Every 2 weeks' },
   { value: 'monthly', label: 'Monthly' },
+  { value: 'custom', label: 'Custom' },
 ];
 
 const PICKER_HOURS = Array.from({ length: 9 }, (_, i) => i);
 const PICKER_MINUTES = Array.from({ length: 12 }, (_, i) => i * 5);
+
+const CHECKIN_HOURS = Array.from({ length: 24 }, (_, i) => i);
+const CHECKIN_MINUTES = Array.from({ length: 60 }, (_, i) => i);
+const BUFFER_MINUTES_CUSTOM = Array.from({ length: 59 }, (_, i) => i + 1);
 
 export default function ProposeTaskScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -59,10 +64,13 @@ export default function ProposeTaskScreen() {
   const [pickerHours, setPickerHours] = useState(0);
   const [pickerMinutes, setPickerMinutes] = useState(15);
   const [repeatCycle, setRepeatCycle] = useState<RepeatCycle>(null);
+  const [repeatIntervalDays, setRepeatIntervalDays] = useState<number | null>(null);
   const [requirePhoto, setRequirePhoto] = useState(false);
   const [requireCheckin, setRequireCheckin] = useState(false);
-  const [checkinTime, setCheckinTime] = useState('');
+  const [checkinHour, setCheckinHour] = useState(7);
+  const [checkinMinute, setCheckinMinute] = useState(0);
   const [checkinBuffer, setCheckinBuffer] = useState(15);
+  const [showCustomBuffer, setShowCustomBuffer] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const handlePickerChange = (hours: number, minutes: number) => {
@@ -91,10 +99,10 @@ export default function ProposeTaskScreen() {
       time_block: timeBlock,
       estimated_duration_min: duration,
       repeat_cycle: repeatCycle,
-      repeat_interval_days: null,
+      repeat_interval_days: repeatCycle === 'custom' ? (repeatIntervalDays ?? 7) : null,
       require_photo: requirePhoto,
       require_checkin: requireCheckin,
-      checkin_time: requireCheckin && checkinTime.match(/^\d{2}:\d{2}$/) ? checkinTime : null,
+      checkin_time: requireCheckin ? `${String(checkinHour).padStart(2, '0')}:${String(checkinMinute).padStart(2, '0')}` : null,
       checkin_buffer_min: requireCheckin ? checkinBuffer : null,
     });
     setSaving(false);
@@ -288,6 +296,26 @@ export default function ProposeTaskScreen() {
             ))}
           </View>
 
+          {repeatCycle === 'custom' && (
+            <View style={styles.customRepeatContainer}>
+              <Text style={styles.checkinConfigLabel}>Repeat every</Text>
+              <View style={styles.customRepeatRow}>
+                <TextInput
+                  style={[styles.input, styles.customRepeatInput]}
+                  value={repeatIntervalDays?.toString() ?? ''}
+                  onChangeText={(v) => {
+                    const n = parseInt(v, 10);
+                    setRepeatIntervalDays(isNaN(n) ? null : n);
+                  }}
+                  keyboardType="number-pad"
+                  placeholder="7"
+                  placeholderTextColor={Colors.textMuted}
+                />
+                <Text style={styles.customRepeatLabel}>days</Text>
+              </View>
+            </View>
+          )}
+
           {/* Group-specific options */}
           <Text style={styles.label}>Requirements</Text>
           <View style={styles.switchRow}>
@@ -317,44 +345,88 @@ export default function ProposeTaskScreen() {
 
           {requireCheckin && (
             <View style={styles.checkinConfig}>
-              <Text style={styles.checkinConfigLabel}>Check-in Time (HH:MM)</Text>
-              <TextInput
-                style={styles.checkinTimeInput}
-                placeholder="07:00"
-                placeholderTextColor={Colors.textMuted}
-                value={checkinTime}
-                onChangeText={(v) => {
-                  // Auto-insert colon
-                  const digits = v.replace(/\D/g, '');
-                  if (digits.length <= 2) setCheckinTime(digits);
-                  else setCheckinTime(`${digits.slice(0, 2)}:${digits.slice(2, 4)}`);
-                }}
-                keyboardType="numeric"
-                maxLength={5}
-              />
+              <Text style={styles.checkinConfigLabel}>Check-in Time</Text>
+              <View style={styles.pickerContainer}>
+                <Text style={styles.pickerLabel}>
+                  {String(checkinHour).padStart(2, '0')}:{String(checkinMinute).padStart(2, '0')}
+                </Text>
+                <View style={styles.pickerRow}>
+                  <View style={styles.pickerCol}>
+                    <Text style={styles.pickerColLabel}>Hour</Text>
+                    <View style={styles.pickerWrap}>
+                      <Picker
+                        selectedValue={checkinHour}
+                        onValueChange={setCheckinHour}
+                        style={styles.picker}
+                        itemStyle={styles.pickerItem}
+                      >
+                        {CHECKIN_HOURS.map((h) => (
+                          <Picker.Item key={h} label={String(h).padStart(2, '0')} value={h} color={Colors.textPrimary} />
+                        ))}
+                      </Picker>
+                    </View>
+                  </View>
+                  <Text style={styles.pickerSep}>:</Text>
+                  <View style={styles.pickerCol}>
+                    <Text style={styles.pickerColLabel}>Minute</Text>
+                    <View style={styles.pickerWrap}>
+                      <Picker
+                        selectedValue={checkinMinute}
+                        onValueChange={setCheckinMinute}
+                        style={styles.picker}
+                        itemStyle={styles.pickerItem}
+                      >
+                        {CHECKIN_MINUTES.map((m) => (
+                          <Picker.Item key={m} label={String(m).padStart(2, '0')} value={m} color={Colors.textPrimary} />
+                        ))}
+                      </Picker>
+                    </View>
+                  </View>
+                </View>
+              </View>
               <Text style={styles.checkinConfigLabel}>Grace Period</Text>
               <View style={styles.bufferRow}>
                 {[5, 10, 15, 30].map((min) => (
                   <TouchableOpacity
                     key={min}
-                    style={[styles.chip, checkinBuffer === min && styles.chipActive]}
-                    onPress={() => setCheckinBuffer(min)}
+                    style={[styles.chip, !showCustomBuffer && checkinBuffer === min && styles.chipActive]}
+                    onPress={() => { setCheckinBuffer(min); setShowCustomBuffer(false); }}
                   >
-                    <Text style={[styles.chipText, checkinBuffer === min && styles.chipTextActive]}>
+                    <Text style={[styles.chipText, !showCustomBuffer && checkinBuffer === min && styles.chipTextActive]}>
                       {min}m
                     </Text>
                   </TouchableOpacity>
                 ))}
+                <TouchableOpacity
+                  style={[styles.chip, showCustomBuffer && styles.chipActive]}
+                  onPress={() => setShowCustomBuffer(true)}
+                >
+                  <Text style={[styles.chipText, showCustomBuffer && styles.chipTextActive]}>Custom</Text>
+                </TouchableOpacity>
               </View>
-              {checkinTime.match(/^\d{2}:\d{2}$/) && (
-                <Text style={styles.checkinPreview}>
-                  Window: {checkinTime} – {(() => {
-                    const [h, m] = checkinTime.split(':').map(Number);
-                    const total = h * 60 + m + checkinBuffer;
-                    return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
-                  })()}
-                </Text>
+              {showCustomBuffer && (
+                <View style={styles.pickerContainer}>
+                  <Text style={styles.pickerLabel}>{checkinBuffer} min</Text>
+                  <View style={styles.pickerWrap}>
+                    <Picker
+                      selectedValue={checkinBuffer}
+                      onValueChange={setCheckinBuffer}
+                      style={styles.picker}
+                      itemStyle={styles.pickerItem}
+                    >
+                      {BUFFER_MINUTES_CUSTOM.map((m) => (
+                        <Picker.Item key={m} label={`${m} min`} value={m} color={Colors.textPrimary} />
+                      ))}
+                    </Picker>
+                  </View>
+                </View>
               )}
+              <Text style={styles.checkinPreview}>
+                Window: {String(checkinHour).padStart(2, '0')}:{String(checkinMinute).padStart(2, '0')} – {(() => {
+                  const total = checkinHour * 60 + checkinMinute + checkinBuffer;
+                  return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+                })()}
+              </Text>
             </View>
           )}
 
@@ -461,4 +533,8 @@ const styles = StyleSheet.create({
   },
   bufferRow: { flexDirection: 'row', gap: 8 },
   checkinPreview: { fontSize: 12, color: Colors.accent, fontWeight: '600' },
+  customRepeatContainer: { marginTop: 10 },
+  customRepeatRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 6 },
+  customRepeatInput: { width: 80, textAlign: 'center', paddingVertical: 10 },
+  customRepeatLabel: { fontSize: 15, color: Colors.textSecondary, fontWeight: '600' },
 });

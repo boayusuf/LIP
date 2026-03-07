@@ -9,6 +9,15 @@ import {
 } from '../types';
 import { supabase } from './supabase';
 
+function isCheckinWindowClosed(task: any): boolean {
+  if (!task.require_checkin || !task.checkin_time) return false;
+  const [h, m] = (task.checkin_time as string).split(':').map(Number);
+  const buf = task.checkin_buffer_min ?? 15;
+  const opens = new Date(); opens.setHours(h, m, 0, 0);
+  const closes = new Date(opens.getTime() + buf * 60000);
+  return new Date() >= closes;
+}
+
 interface GroupState {
   groups: Group[];
   dmGroups: Group[];
@@ -39,6 +48,7 @@ interface GroupState {
   fetchMessages: (groupId: string) => Promise<void>;
   sendMessage: (groupId: string, content: string, replyToId?: string) => Promise<void>;
   subscribeToMessages: (groupId: string) => () => void;
+  markMessagesRead: (groupId: string) => Promise<void>;
 
   fetchFeed: (groupId: string) => Promise<void>;
   subscribeToFeed: (groupId: string) => () => void;
@@ -48,6 +58,9 @@ interface GroupState {
 
   inAppNotif: { id: string; groupId: string; isDM: boolean; groupName: string; senderName: string; content: string } | null;
   clearInAppNotif: () => void;
+  activeChatGroupId: string | null;
+  setActiveChatGroupId: (groupId: string | null) => void;
+  subscribeForNotifications: (groupIds: string[]) => () => void;
 }
 
 export const useGroupStore = create<GroupState>((set, get) => ({
@@ -61,6 +74,8 @@ export const useGroupStore = create<GroupState>((set, get) => ({
   feedItems: [],
   inAppNotif: null,
   clearInAppNotif: () => set({ inAppNotif: null }),
+  activeChatGroupId: null,
+  setActiveChatGroupId: (groupId) => set({ activeChatGroupId: groupId }),
 
   fetchGroups: async () => {
     set({ groupsLoading: true });
@@ -264,7 +279,12 @@ export const useGroupStore = create<GroupState>((set, get) => ({
         return { ...g, last_message: lastMsg?.content || null, last_message_at: lastMsg?.created_at || null };
       })
     );
-    set({ dmGroups: dmGroupsWithLastMsg });
+    const sorted = dmGroupsWithLastMsg.sort((a, b) => {
+      if (!a.last_message_at) return 1;
+      if (!b.last_message_at) return -1;
+      return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
+    });
+    set({ dmGroups: sorted });
   },
 
   createDM: async (otherUserId) => {
@@ -323,10 +343,10 @@ export const useGroupStore = create<GroupState>((set, get) => ({
         profile: profiles.find((p) => p.id === m.user_id) || null,
       }));
 
-      // Calculate group streak
+      // Calculate group streak and total XP
       const { data: completions } = await supabase
         .from('group_task_completions')
-        .select('user_id, completed_at')
+        .select('user_id, completed_at, xp_earned')
         .eq('status', 'done')
         .not('completed_at', 'is', null)
         .in('group_task_id', 
@@ -373,12 +393,15 @@ export const useGroupStore = create<GroupState>((set, get) => ({
         }
       }
 
+      const groupXP = (completions || []).reduce((sum: number, c: any) => sum + (c.xp_earned || 0), 0);
+
       set({
         currentGroup: {
           ...group,
           members: membersWithProfiles,
           member_count: membersWithProfiles.length,
           group_streak: groupStreak,
+          group_xp: groupXP,
         },
       });
     }
@@ -507,6 +530,36 @@ export const useGroupStore = create<GroupState>((set, get) => ({
     });
 
     set({ groupTasks: tasksWithCompletions });
+
+    // Post check-in summary feed items for expired tasks (once per day)
+    const today = new Date().toISOString().split('T')[0];
+    for (const task of tasksWithCompletions) {
+      if (!isCheckinWindowClosed(task)) continue;
+      const { data: existing } = await supabase
+        .from('feed_items')
+        .select('id')
+        .eq('group_task_id', task.id)
+        .eq('type', 'checkin_summary')
+        .gte('created_at', `${today}T00:00:00`)
+        .maybeSingle();
+      if (existing) continue;
+      const completions = task.all_completions || [];
+      const summaryData = completions.map((c: any) => ({
+        userId: c.user_id,
+        name: c.profile?.name || c.profile?.email?.split('@')[0] || 'Unknown',
+        status: c.status,
+        lateCheckin: c.late_checkin || false,
+        avatarUrl: c.profile?.avatar_url || null,
+      }));
+      await supabase.from('feed_items').insert({
+        group_id: groupId,
+        user_id: user.id,
+        type: 'checkin_summary',
+        group_task_id: task.id,
+        content: JSON.stringify({ task: task.title, completions: summaryData }),
+        xp_earned: 0,
+      });
+    }
   },
 
   startGroupTimer: async (completionId) => {
@@ -621,17 +674,27 @@ export const useGroupStore = create<GroupState>((set, get) => ({
       }).eq('id', user.id);
     }
 
-    const feedPayload: any = {
-      group_id: groupId,
-      user_id: user.id,
-      type: photoUrl ? 'photo_checkin' : 'task_completed',
-      group_task_id: groupTaskId,
-      content: `completed "${task.title}"`,
-      xp_earned: xp,
-      photo_url: photoUrl || null,
-    };
-    if (checkinNote) feedPayload.checkin_note = checkinNote;
-    await supabase.from('feed_items').insert(feedPayload);
+    // Only post to feed for photo checkins and check-in tasks (not regular completions)
+    if (photoUrl || task.require_checkin) {
+      const feedPayload: any = {
+        group_id: groupId,
+        user_id: user.id,
+        type: photoUrl ? 'photo_checkin' : 'checkin_completed',
+        group_task_id: groupTaskId,
+        content: photoUrl ? `📸 completed "${task.title}"` : `✅ checked in for "${task.title}"`,
+        xp_earned: xp,
+        photo_url: photoUrl || null,
+      };
+      if (checkinNote) feedPayload.checkin_note = checkinNote;
+      // For check-in tasks, set created_at to scheduled time so feed orders by window time, not upload time
+      if (!photoUrl && task.require_checkin && task.checkin_time) {
+        const [h, m] = task.checkin_time.split(':').map(Number);
+        const scheduledAt = new Date();
+        scheduledAt.setHours(h, m, 0, 0);
+        feedPayload.created_at = scheduledAt.toISOString();
+      }
+      await supabase.from('feed_items').insert(feedPayload);
+    }
 
     await get().fetchGroupTasks(groupId);
     await get().fetchFeed(groupId);
@@ -661,6 +724,18 @@ export const useGroupStore = create<GroupState>((set, get) => ({
       const profileMap: any = {};
       (profiles || []).forEach((p: any) => { profileMap[p.id] = p; });
 
+      // Fetch read receipts
+      const msgIds = data.map((m) => m.id);
+      const { data: reads } = await supabase
+        .from('message_reads')
+        .select('message_id, user_id')
+        .in('message_id', msgIds);
+      const readsByMsg: Record<string, string[]> = {};
+      (reads || []).forEach((r: any) => {
+        if (!readsByMsg[r.message_id]) readsByMsg[r.message_id] = [];
+        readsByMsg[r.message_id].push(r.user_id);
+      });
+
       const messagesWithSenders = data.map((m) => ({
         ...m,
         sender: profileMap[m.user_id] || null,
@@ -670,6 +745,7 @@ export const useGroupStore = create<GroupState>((set, get) => ({
               sender: profileMap[data.find((r) => r.id === m.reply_to_id)!.user_id] || null,
             }
           : null,
+        read_by: readsByMsg[m.id] || [],
       }));
 
       set({ messages: messagesWithSenders });
@@ -698,19 +774,52 @@ export const useGroupStore = create<GroupState>((set, get) => ({
     await get().fetchMessages(groupId);
   },
 
+  markMessagesRead: async (groupId) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { messages } = get();
+    const others = messages.filter((m) => m.group_id === groupId && m.user_id !== user.id);
+    if (others.length === 0) return;
+    const rows = others.map((m) => ({ message_id: m.id, user_id: user.id }));
+    await supabase.from('message_reads').upsert(rows, { onConflict: 'message_id,user_id', ignoreDuplicates: true });
+    // Refresh so senders see updated read_by
+    await get().fetchMessages(groupId);
+  },
+
   subscribeToMessages: (groupId) => {
+    // Only handles read receipts — message inserts are handled by subscribeForNotifications
+    // to avoid duplicate postgres_changes subscriptions on the same filter
     const channel = supabase
       .channel(`messages:${groupId}`)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `group_id=eq.${groupId}` },
-        async (payload) => {
-          await get().fetchMessages(groupId);
-          const { data: { user } } = await supabase.auth.getUser();
-          if (payload.new && payload.new.user_id !== user?.id) {
-            const group = get().currentGroup?.id === groupId
-              ? get().currentGroup
-              : (get().dmGroups.find(g => g.id === groupId) || get().groups.find(g => g.id === groupId));
+        { event: 'INSERT', schema: 'public', table: 'message_reads' },
+        async () => { await get().fetchMessages(groupId); }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  },
+
+  subscribeForNotifications: (groupIds) => {
+    const channels = groupIds.map(groupId =>
+      supabase
+        .channel(`notif:${groupId}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'messages', filter: `group_id=eq.${groupId}` },
+          async (payload) => {
+            if (!payload.new) return;
+            const { data: { user } } = await supabase.auth.getUser();
+            if (payload.new.user_id === user?.id) return;
+            // If user is currently in this chat, update messages in real time
+            if (get().activeChatGroupId === groupId) {
+              await get().fetchMessages(groupId);
+              await get().markMessagesRead(groupId);
+              return;
+            }
+            // Otherwise show in-app notification
+            const group = get().groups.find(g => g.id === groupId)
+              || get().dmGroups.find(g => g.id === groupId);
             const { data: sender } = await supabase
               .from('profiles').select('name, email').eq('id', payload.new.user_id).single();
             const senderName = sender?.name || sender?.email?.split('@')[0] || 'Someone';
@@ -725,10 +834,10 @@ export const useGroupStore = create<GroupState>((set, get) => ({
               },
             });
           }
-        }
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+        )
+        .subscribe()
+    );
+    return () => { channels.forEach(ch => supabase.removeChannel(ch)); };
   },
 
   fetchFeed: async (groupId) => {
@@ -736,6 +845,7 @@ export const useGroupStore = create<GroupState>((set, get) => ({
       .from('feed_items')
       .select('*, reactions:feed_reactions(*)')
       .eq('group_id', groupId)
+      .in('type', ['photo_checkin', 'checkin_completed', 'joined', 'streak', 'checkin_summary'])
       .order('created_at', { ascending: false })
       .limit(50);
 

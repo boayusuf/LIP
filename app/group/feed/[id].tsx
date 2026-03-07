@@ -93,8 +93,9 @@ export default function FeedScreen() {
 
   const getFeedIcon = (type: string) => {
     switch (type) {
-      case 'task_completed': return '✅';
       case 'photo_checkin': return '📸';
+      case 'checkin_completed': return '📍';
+      case 'checkin_summary': return '📊';
       case 'streak': return '🔥';
       case 'joined': return '👋';
       default: return '📌';
@@ -132,8 +133,36 @@ export default function FeedScreen() {
         </View>
 
         <Text style={styles.feedContentText}>
-          {item.content || `${authorName} ${item.type.replace('_', ' ')}`}
+          {item.type === 'checkin_summary'
+            ? (() => { try { const d = JSON.parse(item.content || '{}'); return `Check-in closed: "${d.task}"`; } catch { return item.content || ''; } })()
+            : (item.content || `${authorName} ${item.type.replace('_', ' ')}`)}
         </Text>
+
+        {/* Check-in summary dots */}
+        {item.type === 'checkin_summary' && item.content && (() => {
+          try {
+            const data = JSON.parse(item.content);
+            const completions: any[] = data.completions || [];
+            if (completions.length === 0) return null;
+            return (
+              <View style={styles.summaryRow}>
+                {completions.map((c: any) => {
+                  const dotColor = c.status === 'done'
+                    ? (c.lateCheckin ? '#FF9500' : Colors.green)
+                    : Colors.priorityUrgent;
+                  return (
+                    <View key={c.userId} style={styles.summaryMember}>
+                      <View style={[styles.summaryDot, { borderColor: dotColor }]}>
+                        <AvatarImage size={26} name={c.name} avatarUrl={c.avatarUrl} />
+                      </View>
+                      <Text style={styles.summaryName} numberOfLines={1}>{c.name.split(' ')[0]}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            );
+          } catch { return null; }
+        })()}
 
         {/* Check-in note */}
         {item.checkin_note && (
@@ -343,4 +372,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.accent + '10', borderRadius: 4,
   },
   checkinNoteText: { fontSize: 13, color: Colors.textSecondary, fontStyle: 'italic', lineHeight: 18 },
+  summaryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 10 },
+  summaryMember: { alignItems: 'center', gap: 4 },
+  summaryDot: { borderWidth: 2, borderRadius: 16, width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
+  summaryName: { fontSize: 10, color: Colors.textMuted, maxWidth: 48, textAlign: 'center' },
 });
