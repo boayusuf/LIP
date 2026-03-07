@@ -127,7 +127,7 @@ export default function ChatScreen() {
             });
             setReplyTo(item);
             inputRef.current?.focus();
-            setTimeout(() => swipeableRefs.current.get(item.id)?.close(), 80);
+            setTimeout(() => swipeableRefs.current.get(item.id)?.close(), 0);
           }
         }}
         friction={1.5}

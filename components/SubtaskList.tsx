@@ -14,9 +14,10 @@ import { Subtask } from '../types';
 interface SubtaskListProps {
   taskId: string;
   subtasks: Subtask[];
+  disabled?: boolean;
 }
 
-export default function SubtaskList({ taskId, subtasks }: SubtaskListProps) {
+export default function SubtaskList({ taskId, subtasks, disabled }: SubtaskListProps) {
   const { addSubtask, toggleSubtask, deleteSubtask } = useStore();
   const [newTitle, setNewTitle] = useState('');
   const [showInput, setShowInput] = useState(false);
@@ -61,16 +62,18 @@ export default function SubtaskList({ taskId, subtasks }: SubtaskListProps) {
           >
             {subtask.title}
           </Text>
-          <TouchableOpacity
-            onPress={() => deleteSubtask(subtask.id)}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <X color={Colors.textMuted} size={14} />
-          </TouchableOpacity>
+          {!disabled && (
+            <TouchableOpacity
+              onPress={() => deleteSubtask(subtask.id)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <X color={Colors.textMuted} size={14} />
+            </TouchableOpacity>
+          )}
         </View>
       ))}
 
-      {showInput ? (
+      {!disabled && (showInput ? (
         <View style={styles.addRow}>
           <TextInput
             style={styles.addInput}
@@ -97,7 +100,7 @@ export default function SubtaskList({ taskId, subtasks }: SubtaskListProps) {
           <Plus color={Colors.textMuted} size={14} />
           <Text style={styles.addText}>Add subtask</Text>
         </TouchableOpacity>
-      )}
+      ))}
     </View>
   );
 }

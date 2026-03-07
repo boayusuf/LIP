@@ -57,8 +57,17 @@ export default function MessagesScreen() {
                 style={{ marginRight: 14 }}
               />
               <View style={styles.dmInfo}>
-                <Text style={styles.dmName}>{name}</Text>
-                <Text style={styles.dmSub}>{other?.profile?.email || ''}</Text>
+                <View style={styles.dmRow}>
+                  <Text style={styles.dmName}>{name}</Text>
+                  {item.last_message_at && (
+                    <Text style={styles.dmTime}>
+                      {new Date(item.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                  )}
+                </View>
+                <Text style={styles.dmSub} numberOfLines={1}>
+                  {item.last_message || other?.profile?.email || ''}
+                </Text>
               </View>
             </TouchableOpacity>
           );
@@ -89,7 +98,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   dmInfo: { flex: 1 },
+  dmRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   dmName: { fontSize: 16, fontWeight: '600', color: Colors.textPrimary },
+  dmTime: { fontSize: 12, color: Colors.textMuted },
   dmSub: { fontSize: 13, color: Colors.textMuted, marginTop: 2 },
   empty: { alignItems: 'center', paddingTop: 80 },
   emptyEmoji: { fontSize: 40, marginBottom: 10 },

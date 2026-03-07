@@ -28,15 +28,12 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   RefreshControl,
   ScrollView,
   Share,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -54,6 +51,23 @@ function fmtSec(sec: number): string {
   const s = sec % 60;
   if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
+type CheckinStatus = 'none' | 'upcoming' | 'open' | 'closed';
+function getCheckinStatus(task: any): { status: CheckinStatus; label: string } {
+  if (!task?.require_checkin || !task?.checkin_time) return { status: 'none', label: '' };
+  const [h, m] = task.checkin_time.split(':').map(Number);
+  const buf = task.checkin_buffer_min ?? 15;
+  const now = new Date();
+  const opens = new Date(); opens.setHours(h, m, 0, 0);
+  const closes = new Date(opens.getTime() + buf * 60000);
+  const closeH = Math.floor((h * 60 + m + buf) / 60) % 24;
+  const closeM = (m + buf) % 60;
+  const openStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  const closeStr = `${String(closeH).padStart(2, '0')}:${String(closeM).padStart(2, '0')}`;
+  if (now < opens) return { status: 'upcoming', label: `Opens ${openStr}–${closeStr}` };
+  if (now < closes) return { status: 'open', label: `Open until ${closeStr}` };
+  return { status: 'closed', label: `Closed at ${closeStr}` };
 }
 
 export default function GroupDetailScreen() {
@@ -88,10 +102,6 @@ export default function GroupDetailScreen() {
   type PendingComplete = { completionId: string; taskId: string; groupId: string; photoUri: string };
   const [pendingPhoto, setPendingPhoto] = useState<PendingComplete | null>(null);
 
-  // Check-in note state
-  type PendingCheckin = { completionId: string; taskId: string; groupId: string; photoUri?: string };
-  const [checkinPending, setCheckinPending] = useState<PendingCheckin | null>(null);
-  const [checkinText, setCheckinText] = useState('');
   const [focusGroupTaskId, setFocusGroupTaskId] = useState<string | null>(null);
   const [focusGroupSeconds, setFocusGroupSeconds] = useState(0);
 
@@ -358,7 +368,8 @@ export default function GroupDetailScreen() {
                         </View>
                       </View>
                       <TouchableOpacity
-                        style={styles.completeBtn}
+                        style={[styles.completeBtn, task.require_checkin && task.checkin_time && getCheckinStatus(task).status === 'closed' && { opacity: 0.3 }]}
+                        disabled={!!(task.require_checkin && task.checkin_time && getCheckinStatus(task).status === 'closed')}
                         onPress={async () => {
                           const pickPhoto = async (): Promise<string | null> => {
                             return new Promise((resolve) => {
@@ -387,7 +398,6 @@ export default function GroupDetailScreen() {
                             });
                           };
 
-                          let photoUri: string | undefined;
                           if (task.require_photo) {
                             const uri = await pickPhoto();
                             if (!uri) return;
@@ -396,10 +406,12 @@ export default function GroupDetailScreen() {
                             return;
                           }
 
-                          if (task.require_checkin) {
-                            setCheckinPending({ completionId: completion.id, taskId: task.id, groupId: task.group_id, photoUri });
-                            setCheckinText('');
-                            return;
+                          if (task.require_checkin && task.checkin_time) {
+                            const cs = getCheckinStatus(task);
+                            if (cs.status === 'closed') {
+                              Alert.alert('Check-in closed', `The check-in window has closed (${cs.label}).`);
+                              return;
+                            }
                           }
 
                           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -417,18 +429,26 @@ export default function GroupDetailScreen() {
                   <Text style={styles.taskMeta}>
                     {task.estimated_duration_min}min · {task.priority} · {task.time_block}
                     {task.require_photo ? ' · 📸' : ''}
-                    {task.require_checkin ? ' · ✅' : ''}
                   </Text>
+                  {task.require_checkin && (() => {
+                    const cs = getCheckinStatus(task);
+                    if (cs.status === 'none') return <Text style={styles.checkinBadgeOpen}>✅ Check-in anytime</Text>;
+                    const color = cs.status === 'closed' ? Colors.priorityUrgent : cs.status === 'open' ? Colors.green : Colors.textMuted;
+                    return <Text style={[styles.checkinBadge, { color }]}>✅ {cs.label}</Text>;
+                  })()}
                   {/* Member progress */}
                   <View style={styles.progressRow}>
                     <Text style={styles.progressText}>{doneCount}/{totalCount} completed</Text>
                     <View style={styles.memberDots}>
-                      {allCompletions.map((c: any) => (
+                      {allCompletions.map((c: any) => {
+                        const windowClosed = task.require_checkin && task.checkin_time && getCheckinStatus(task).status === 'closed';
+                        const missed = windowClosed && c.status !== 'done';
+                        return (
                         <View
                           key={c.id}
                           style={[
                             styles.memberDot,
-                            { borderWidth: 2, borderColor: c.status === 'done' ? Colors.green : Colors.border },
+                            { borderWidth: 2, borderColor: missed ? Colors.priorityUrgent : c.status === 'done' ? Colors.green : Colors.border },
                           ]}
                         >
                           <AvatarImage
@@ -437,7 +457,8 @@ export default function GroupDetailScreen() {
                             avatarUrl={c.profile?.avatar_url ?? null}
                           />
                         </View>
-                      ))}
+                        );
+                      })}
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -606,13 +627,15 @@ export default function GroupDetailScreen() {
                   const { completionId, taskId, groupId, photoUri } = pendingPhoto;
                   setPendingPhoto(null);
                   const task = groupTasks.find((t) => t.id === taskId);
-                  if (task?.require_checkin) {
-                    setCheckinPending({ completionId, taskId, groupId, photoUri });
-                    setCheckinText('');
-                  } else {
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                    await completeGroupTask(completionId, taskId, groupId, photoUri);
+                  if (task?.require_checkin && task?.checkin_time) {
+                    const cs = getCheckinStatus(task);
+                    if (cs.status === 'closed') {
+                      Alert.alert('Check-in closed', `The check-in window has closed (${cs.label}).`);
+                      return;
+                    }
                   }
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  await completeGroupTask(completionId, taskId, groupId, photoUri);
                 }}
               >
                 <Text style={styles.photoConfirmBtnText}>✓ Confirm</Text>
@@ -622,51 +645,6 @@ export default function GroupDetailScreen() {
         </View>
       </Modal>
 
-      {/* Check-in Note Modal */}
-      <Modal visible={!!checkinPending} animationType="slide" transparent>
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>✅ Check-in Note</Text>
-              <TouchableOpacity onPress={() => setCheckinPending(null)}>
-                <X color={Colors.textPrimary} size={22} />
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.checkinDesc}>
-              Describe what you did to complete this task:
-            </Text>
-            <TextInput
-              style={styles.checkinInput}
-              placeholder="e.g. Ran 5km in the park at 7am..."
-              placeholderTextColor={Colors.textMuted}
-              value={checkinText}
-              onChangeText={setCheckinText}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-              autoFocus
-            />
-            <TouchableOpacity
-              style={[styles.checkinSubmitBtn, !checkinText.trim() && { opacity: 0.5 }]}
-              disabled={!checkinText.trim()}
-              onPress={async () => {
-                if (!checkinPending || !checkinText.trim()) return;
-                const { completionId, taskId, groupId, photoUri } = checkinPending;
-                setCheckinPending(null);
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                await completeGroupTask(completionId, taskId, groupId, photoUri, checkinText.trim());
-                setCheckinText('');
-              }}
-            >
-              <Text style={styles.checkinSubmitBtnText}>Submit & Complete</Text>
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
       {/* Group Task Focus Timer Modal */}
       <Modal
         visible={!!focusGroupTaskId}
@@ -674,11 +652,6 @@ export default function GroupDetailScreen() {
         onRequestClose={() => setFocusGroupTaskId(null)}
       >
         <View style={[styles.focusContainer, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-          <TouchableOpacity style={styles.focusMinimize} onPress={() => setFocusGroupTaskId(null)}>
-            <Minimize2 color={Colors.textMuted} size={20} />
-            <Text style={styles.focusMinimizeText}>Minimize</Text>
-          </TouchableOpacity>
-
           {/* Task name pinned at top */}
           <View style={styles.focusHeader}>
             <Text style={styles.focusTitle} numberOfLines={2}>
@@ -724,6 +697,10 @@ export default function GroupDetailScreen() {
           </View>
 
           <View style={styles.focusActions}>
+            <TouchableOpacity style={styles.focusBtnClose} onPress={() => setFocusGroupTaskId(null)}>
+              <Minimize2 color={Colors.textMuted} size={18} />
+            </TouchableOpacity>
+
             <TouchableOpacity
               style={[styles.focusBtn, focusGroupCompletion?.timer_started_at ? styles.focusBtnStop : styles.focusBtnStart]}
               onPress={() => {
@@ -963,6 +940,8 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.green + '30',
   },
   taskMeta: { fontSize: 12, color: Colors.textMuted, marginTop: 6 },
+  checkinBadge: { fontSize: 11, fontWeight: '600', marginTop: 4 },
+  checkinBadgeOpen: { fontSize: 11, fontWeight: '600', marginTop: 4, color: Colors.textMuted },
   leaveBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: Colors.priorityUrgent + '40',
@@ -1068,8 +1047,7 @@ const styles = StyleSheet.create({
   checkinSubmitBtnText: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
   // Focus timer modal
   focusContainer: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 24 },
-  focusMinimize: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 16 },
-  focusMinimizeText: { fontSize: 14, color: Colors.textMuted },
+  focusBtnClose: { width: 48, height: 56, borderRadius: 14, backgroundColor: Colors.primary, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
   focusHeader: { alignItems: 'center', paddingTop: 8, paddingBottom: 16 },
   focusContent: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   focusTitle: { fontSize: 26, fontWeight: '700', color: Colors.textPrimary, textAlign: 'center', lineHeight: 32, marginBottom: 8 },

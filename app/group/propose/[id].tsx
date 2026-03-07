@@ -61,6 +61,8 @@ export default function ProposeTaskScreen() {
   const [repeatCycle, setRepeatCycle] = useState<RepeatCycle>(null);
   const [requirePhoto, setRequirePhoto] = useState(false);
   const [requireCheckin, setRequireCheckin] = useState(false);
+  const [checkinTime, setCheckinTime] = useState('');
+  const [checkinBuffer, setCheckinBuffer] = useState(15);
   const [saving, setSaving] = useState(false);
 
   const handlePickerChange = (hours: number, minutes: number) => {
@@ -92,6 +94,8 @@ export default function ProposeTaskScreen() {
       repeat_interval_days: null,
       require_photo: requirePhoto,
       require_checkin: requireCheckin,
+      checkin_time: requireCheckin && checkinTime.match(/^\d{2}:\d{2}$/) ? checkinTime : null,
+      checkin_buffer_min: requireCheckin ? checkinBuffer : null,
     });
     setSaving(false);
     if (error) {
@@ -301,7 +305,7 @@ export default function ProposeTaskScreen() {
           <View style={styles.switchRow}>
             <View style={styles.switchInfo}>
               <Text style={styles.switchLabel}>✅ Require Check-in</Text>
-              <Text style={styles.switchDesc}>Members write what they did</Text>
+              <Text style={styles.switchDesc}>Members must check in within a time window</Text>
             </View>
             <Switch
               value={requireCheckin}
@@ -310,6 +314,49 @@ export default function ProposeTaskScreen() {
               thumbColor={requireCheckin ? Colors.accent : Colors.textMuted}
             />
           </View>
+
+          {requireCheckin && (
+            <View style={styles.checkinConfig}>
+              <Text style={styles.checkinConfigLabel}>Check-in Time (HH:MM)</Text>
+              <TextInput
+                style={styles.checkinTimeInput}
+                placeholder="07:00"
+                placeholderTextColor={Colors.textMuted}
+                value={checkinTime}
+                onChangeText={(v) => {
+                  // Auto-insert colon
+                  const digits = v.replace(/\D/g, '');
+                  if (digits.length <= 2) setCheckinTime(digits);
+                  else setCheckinTime(`${digits.slice(0, 2)}:${digits.slice(2, 4)}`);
+                }}
+                keyboardType="numeric"
+                maxLength={5}
+              />
+              <Text style={styles.checkinConfigLabel}>Grace Period</Text>
+              <View style={styles.bufferRow}>
+                {[5, 10, 15, 30].map((min) => (
+                  <TouchableOpacity
+                    key={min}
+                    style={[styles.chip, checkinBuffer === min && styles.chipActive]}
+                    onPress={() => setCheckinBuffer(min)}
+                  >
+                    <Text style={[styles.chipText, checkinBuffer === min && styles.chipTextActive]}>
+                      {min}m
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              {checkinTime.match(/^\d{2}:\d{2}$/) && (
+                <Text style={styles.checkinPreview}>
+                  Window: {checkinTime} – {(() => {
+                    const [h, m] = checkinTime.split(':').map(Number);
+                    const total = h * 60 + m + checkinBuffer;
+                    return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+                  })()}
+                </Text>
+              )}
+            </View>
+          )}
 
           {/* XP Preview */}
           <View style={styles.xpPreview}>
@@ -402,4 +449,16 @@ const styles = StyleSheet.create({
     borderRadius: 8, borderWidth: 1, borderColor: Colors.accent + '20',
   },
   voteNoteText: { fontSize: 13, color: Colors.accent, textAlign: 'center' },
+  checkinConfig: {
+    backgroundColor: Colors.primary, borderRadius: 10, padding: 14, marginBottom: 8,
+    borderWidth: 1, borderColor: Colors.border, gap: 10,
+  },
+  checkinConfigLabel: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
+  checkinTimeInput: {
+    backgroundColor: Colors.inputBg, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 8, paddingHorizontal: 14, paddingVertical: 10, fontSize: 20,
+    color: Colors.textPrimary, fontWeight: '700', letterSpacing: 2, width: 100,
+  },
+  bufferRow: { flexDirection: 'row', gap: 8 },
+  checkinPreview: { fontSize: 12, color: Colors.accent, fontWeight: '600' },
 });

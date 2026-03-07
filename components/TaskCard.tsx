@@ -218,6 +218,7 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
           <SubtaskList
             taskId={task.id}
             subtasks={task.subtasks || []}
+            disabled={isDone}
           />
           {!isDone && (
             <View style={styles.actions}>
@@ -252,11 +253,6 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
         onRequestClose={() => setFocusMode(false)}
       >
         <View style={[styles.focusContainer, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-          <TouchableOpacity style={styles.focusMinimize} onPress={() => setFocusMode(false)}>
-            <Minimize2 color={Colors.textMuted} size={20} />
-            <Text style={styles.focusMinimizeText}>Minimize</Text>
-          </TouchableOpacity>
-
           {/* Task name pinned at top */}
           <View style={styles.focusHeader}>
             <Text style={styles.focusTitle} numberOfLines={2}>{task.title}</Text>
@@ -264,7 +260,6 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
           </View>
 
           <View style={styles.focusContent}>
-            {/* Circular progress ring */}
             <View style={styles.ringContainer}>
               <Svg width={320} height={320} viewBox="0 0 320 320">
                 <Circle
@@ -298,6 +293,13 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
           </View>
 
           <View style={styles.focusActions}>
+            <TouchableOpacity
+              style={styles.focusBtnClose}
+              onPress={() => setFocusMode(false)}
+            >
+              <Minimize2 color={Colors.textMuted} size={18} />
+            </TouchableOpacity>
+
             <TouchableOpacity
               style={[styles.focusBtn, isRunning ? styles.focusBtnStop : styles.focusBtnStart]}
               onPress={handleTimerToggle}
@@ -488,16 +490,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     paddingHorizontal: 24,
   },
-  focusMinimize: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 16,
-  },
-  focusMinimizeText: {
-    fontSize: 14,
-    color: Colors.textMuted,
-  },
   focusHeader: {
     alignItems: 'center',
     paddingTop: 8,
@@ -555,6 +547,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     paddingBottom: 24,
+    alignItems: 'center',
+  },
+  focusBtnClose: {
+    width: 48,
+    height: 56,
+    borderRadius: 14,
+    backgroundColor: Colors.primary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   focusBtn: {
     flex: 1,

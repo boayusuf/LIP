@@ -12,7 +12,7 @@ import {
   Users,
   X
 } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Dimensions,
@@ -80,6 +80,7 @@ interface HeatmapData {
 }
 
 function ContributionHeatmap({ data, totalDays }: { data: HeatmapData; totalDays: number }) {
+  const scrollRef = useRef<ScrollView>(null);
   const today = new Date();
   const endDate = new Date(today);
   endDate.setHours(0, 0, 0, 0);
@@ -148,7 +149,12 @@ function ContributionHeatmap({ data, totalDays }: { data: HeatmapData; totalDays
           ))}
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
+        >
           <View style={heatStyles.grid}>
             {weeks.map((week, wi) => (
               <View key={wi} style={heatStyles.weekColumn}>

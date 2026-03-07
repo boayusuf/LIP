@@ -45,6 +45,9 @@ interface GroupState {
   addFeedReaction: (feedItemId: string, emoji: string) => Promise<void>;
   removeFeedReaction: (feedItemId: string, emoji: string) => Promise<void>;
   addFeedComment: (feedItemId: string, content: string) => Promise<void>;
+
+  inAppNotif: { id: string; groupId: string; isDM: boolean; groupName: string; senderName: string; content: string } | null;
+  clearInAppNotif: () => void;
 }
 
 export const useGroupStore = create<GroupState>((set, get) => ({
@@ -56,6 +59,8 @@ export const useGroupStore = create<GroupState>((set, get) => ({
   groupTasks: [],
   messages: [],
   feedItems: [],
+  inAppNotif: null,
+  clearInAppNotif: () => set({ inAppNotif: null }),
 
   fetchGroups: async () => {
     set({ groupsLoading: true });
@@ -88,7 +93,7 @@ export const useGroupStore = create<GroupState>((set, get) => ({
           return { ...g, member_count: count || 0 };
         })
       );
-      set({ groups: groupsWithCounts, groupsLoading: false });
+      set({ groups: groupsWithCounts.filter((g: any) => !g.is_dm), groupsLoading: false });
     } else {
       set({ groupsLoading: false });
     }
@@ -251,7 +256,15 @@ export const useGroupStore = create<GroupState>((set, get) => ({
         return { ...g, members: membersWithProfiles, member_count: membersWithProfiles.length };
       })
     );
-    set({ dmGroups: dmGroupsWithOther });
+    const dmGroupsWithLastMsg = await Promise.all(
+      dmGroupsWithOther.map(async (g) => {
+        const { data: lastMsg } = await supabase
+          .from('messages').select('content, created_at')
+          .eq('group_id', g.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
+        return { ...g, last_message: lastMsg?.content || null, last_message_at: lastMsg?.created_at || null };
+      })
+    );
+    set({ dmGroups: dmGroupsWithLastMsg });
   },
 
   createDM: async (otherUserId) => {
@@ -274,10 +287,8 @@ export const useGroupStore = create<GroupState>((set, get) => ({
 
     if (error) return { error: error.message };
 
-    await supabase.from('group_members').insert([
-      { group_id: group.id, user_id: user.id },
-      { group_id: group.id, user_id: otherUserId },
-    ]);
+    await supabase.from('group_members').insert({ group_id: group.id, user_id: user.id });
+    await supabase.from('group_members').insert({ group_id: group.id, user_id: otherUserId });
 
     await get().fetchDMs();
     const updated = get().dmGroups.find((g) => g.id === group.id);
@@ -404,6 +415,8 @@ export const useGroupStore = create<GroupState>((set, get) => ({
       repeat_interval_days: formData.repeat_interval_days,
       require_photo: formData.require_photo,
       require_checkin: formData.require_checkin,
+      checkin_time: formData.checkin_time || null,
+      checkin_buffer_min: formData.checkin_buffer_min || null,
     });
 
     if (error) return { error: error.message };
@@ -573,15 +586,28 @@ export const useGroupStore = create<GroupState>((set, get) => ({
     const multiplier = task.priority === 'urgent' ? 1.5 : task.priority === 'important' ? 1.2 : 1.0;
     const xp = Math.floor(base * multiplier);
 
-    await supabase.from('group_task_completions').update({
+    let lateCheckin = false;
+    if (task.require_checkin && task.checkin_time) {
+      const [h, m] = task.checkin_time.split(':').map(Number);
+      const opens = new Date(); opens.setHours(h, m, 0, 0);
+      lateCheckin = new Date() > opens;
+    }
+
+    const completionUpdate: any = {
       status: 'done',
       timer_started_at: null,
       timer_elapsed_sec: finalElapsed,
       xp_earned: xp,
       completed_at: new Date().toISOString(),
       photo_url: photoUrl,
-      checkin_note: checkinNote || null,
-    }).eq('id', completionId);
+    };
+    if (lateCheckin) completionUpdate.late_checkin = true;
+    const { error: completeError } = await supabase.from('group_task_completions').update(completionUpdate).eq('id', completionId);
+    if (completeError) {
+      const { Alert } = require('react-native');
+      Alert.alert('Error', 'Could not complete the task. Please try again.');
+      return;
+    }
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -664,7 +690,8 @@ export const useGroupStore = create<GroupState>((set, get) => ({
     });
 
     if (error) {
-      console.log('sendMessage error:', error);
+      const { Alert } = require('react-native');
+      Alert.alert('Failed to send', 'Your message could not be sent. Please try again.');
       return;
     }
 
@@ -676,21 +703,32 @@ export const useGroupStore = create<GroupState>((set, get) => ({
       .channel(`messages:${groupId}`)
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `group_id=eq.${groupId}`,
-        },
-        async () => {
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `group_id=eq.${groupId}` },
+        async (payload) => {
           await get().fetchMessages(groupId);
+          const { data: { user } } = await supabase.auth.getUser();
+          if (payload.new && payload.new.user_id !== user?.id) {
+            const group = get().currentGroup?.id === groupId
+              ? get().currentGroup
+              : (get().dmGroups.find(g => g.id === groupId) || get().groups.find(g => g.id === groupId));
+            const { data: sender } = await supabase
+              .from('profiles').select('name, email').eq('id', payload.new.user_id).single();
+            const senderName = sender?.name || sender?.email?.split('@')[0] || 'Someone';
+            set({
+              inAppNotif: {
+                id: payload.new.id,
+                groupId,
+                isDM: !!(group as any)?.is_dm,
+                groupName: (group as any)?.name || 'Chat',
+                senderName,
+                content: payload.new.content,
+              },
+            });
+          }
         }
       )
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   },
 
   fetchFeed: async (groupId) => {

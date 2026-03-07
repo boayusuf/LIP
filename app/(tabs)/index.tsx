@@ -52,7 +52,8 @@ const toggleBlock = (block: TimeBlock) => {
     : allActiveTasks;
   const completedTasks = tasks
     .filter((t) => t.status === 'done')
-    .sort((a, b) => new Date(b.completed_at || 0).getTime() - new Date(a.completed_at || 0).getTime());
+    .sort((a, b) => new Date(b.completed_at || 0).getTime() - new Date(a.completed_at || 0).getTime())
+    .slice(0, 50);
 
   const getTasksForBlock = (block: TimeBlock): Task[] => {
     return activeTasks

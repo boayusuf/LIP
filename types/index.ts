@@ -76,6 +76,8 @@ export interface Group {
   created_at: string;
   member_count?: number;
   members?: GroupMember[];
+  last_message?: string | null;
+  last_message_at?: string | null;
 }
 
 export interface GroupMember {
@@ -99,6 +101,8 @@ export interface TaskProposal {
   repeat_interval_days: number | null;
   require_photo: boolean;
   require_checkin: boolean;
+  checkin_time: string | null;
+  checkin_buffer_min: number | null;
   deadline: string | null;
   status: ProposalStatus;
   created_at: string;
@@ -127,6 +131,8 @@ export interface GroupTask {
   repeat_interval_days: number | null;
   require_photo: boolean;
   require_checkin: boolean;
+  checkin_time: string | null;
+  checkin_buffer_min: number | null;
   deadline: string | null;
   is_active: boolean;
   created_at: string;
@@ -144,6 +150,7 @@ export interface GroupTaskCompletion {
   xp_earned: number;
   photo_url: string | null;
   checkin_note: string | null;
+  late_checkin: boolean;
   completed_at: string | null;
 }
 
@@ -203,4 +210,6 @@ export interface ProposalFormData {
   repeat_interval_days: number | null;
   require_photo: boolean;
   require_checkin: boolean;
+  checkin_time: string | null;
+  checkin_buffer_min: number | null;
 }
