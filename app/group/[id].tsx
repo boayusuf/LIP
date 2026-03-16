@@ -1,9 +1,7 @@
 import * as Haptics from 'expo-haptics';
-import Svg, { Circle } from 'react-native-svg';
-import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import AvatarImage from '../../components/AvatarImage';
 import {
   ArrowLeft,
   Camera,
@@ -37,8 +35,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import TimerDisplay from '../../components/TimerDisplay';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Circle } from 'react-native-svg';
+import AvatarImage from '../../components/AvatarImage';
+import TimerDisplay from '../../components/TimerDisplay';
 import { Colors } from '../../constants/Colors';
 import { useGroupStore } from '../../lib/groupStore';
 import { useStore } from '../../lib/store';
@@ -969,7 +969,7 @@ export default function GroupDetailScreen() {
     </SafeAreaView>
   );
 }
-
+//abc
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   loadingText: { color: Colors.textMuted, textAlign: 'center', marginTop: 40 },
