@@ -1,20 +1,11 @@
 import { Tabs } from 'expo-router';
 import { CheckSquare, MessageCircle, User, Users } from 'lucide-react-native';
 import { StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGroupStore } from '../../lib/groupStore';
 import { Colors } from '../../constants/Colors';
-import { Fonts, Spacing } from '../../constants/theme';
-
-/** Row height above the home indicator: icon, label and their padding. */
-const TAB_BAR_CONTENT_HEIGHT = 62;
+import { Fonts } from '../../constants/theme';
 
 export default function TabLayout() {
-  // The bar used to hardcode height 85 / paddingBottom 32, which guessed at the
-  // home indicator. On an installed iOS PWA that guess is wrong and the bar
-  // clips, so grow it by the real inset instead.
-  const insets = useSafeAreaInsets();
-
   const { groups, dmGroups, unreadByGroup } = useGroupStore();
   const sumUnread = (list: { id: string }[]) =>
     list.reduce((total, g) => total + (unreadByGroup[g.id] || 0), 0);
@@ -25,13 +16,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: [
-          styles.tabBar,
-          {
-            height: TAB_BAR_CONTENT_HEIGHT + insets.bottom,
-            paddingBottom: insets.bottom,
-          },
-        ],
+        tabBarStyle: styles.tabBar,
         tabBarActiveTintColor: Colors.accent,
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarLabelStyle: styles.tabLabel,
@@ -81,11 +66,13 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
+  // No height and no bottom padding here on purpose. React Navigation's tab bar
+  // already adds the safe-area inset itself, so setting either one again stacks
+  // a second home-indicator gap underneath the icons and reads as a thick band.
   tabBar: {
     backgroundColor: Colors.primary,
     borderTopColor: Colors.border,
     borderTopWidth: 1,
-    paddingTop: Spacing.xs + 2,
   },
   tabLabel: {
     fontFamily: Fonts.semibold, fontSize: 11,

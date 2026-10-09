@@ -23,7 +23,12 @@ import {
   View,
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { runOnJS } from 'react-native-reanimated';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AddTaskModal from '../../components/AddTaskModal';
 import TaskCard from '../../components/TaskCard';
@@ -53,6 +58,7 @@ export default function TodoScreen() {
 
   const [collapsedBlocks, setCollapsedBlocks] = useState<TimeBlock[]>([]);
   const [atTop, setAtTop] = useState(true);
+  const pullDistance = useSharedValue(0);
 
 const toggleBlock = (block: TimeBlock) => {
   setCollapsedBlocks((prev) =>
@@ -74,13 +80,34 @@ const toggleBlock = (block: TimeBlock) => {
         .enabled(atTop && !showAddModal)
         .activeOffsetY(24)
         .failOffsetY(-12)
+        .onUpdate((event) => {
+          // Track the drag so the header can respond to it as it happens.
+          pullDistance.value = Math.max(0, event.translationY);
+        })
         .onEnd((event) => {
           if (event.translationY >= PULL_TO_ADD_THRESHOLD) {
             runOnJS(openAddModal)();
           }
+          pullDistance.value = withTiming(0, { duration: 180 });
         }),
-    [atTop, showAddModal, openAddModal]
+    [atTop, showAddModal, openAddModal, pullDistance]
   );
+
+  // Grows with the drag and settles once it passes the point where releasing
+  // would open the sheet, so the gesture confirms itself before you let go.
+  const pullIndicatorStyle = useAnimatedStyle(() => {
+    const progress = Math.min(pullDistance.value / PULL_TO_ADD_THRESHOLD, 1);
+    return {
+      height: Math.min(pullDistance.value * 0.6, 48),
+      opacity: progress,
+    };
+  });
+
+  const pullLabelStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: 0.9 + Math.min(pullDistance.value / PULL_TO_ADD_THRESHOLD, 1) * 0.1 },
+    ],
+  }));
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -179,7 +206,7 @@ const toggleBlock = (block: TimeBlock) => {
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator
         scrollEventThrottle={16}
         onScroll={(e) => setAtTop(e.nativeEvent.contentOffset.y <= 0)}
         refreshControl={
@@ -200,6 +227,12 @@ const toggleBlock = (block: TimeBlock) => {
           </View>
         ) : (
           <>
+            <Animated.View style={[styles.pullIndicator, pullIndicatorStyle]}>
+              <Animated.Text style={[styles.pullIndicatorText, pullLabelStyle]}>
+                Release to add a task
+              </Animated.Text>
+            </Animated.View>
+
             {/* A hidden gesture is an unused gesture, so say it is there. */}
             <Text style={styles.pullHint}>Pull down to add a task</Text>
 
@@ -376,6 +409,16 @@ const styles = StyleSheet.create({
   scrollView: { flex: 1 },
   scrollContent: { paddingHorizontal: Spacing.screen, paddingTop: Spacing.xs },
   timeBlock: { marginBottom: Spacing.xxl },
+  pullIndicator: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  pullIndicatorText: {
+    ...Type.caption,
+    color: Colors.textSecondary,
+    paddingBottom: Spacing.sm,
+  },
   pullHint: {
     ...Type.caption,
     color: Colors.textMuted,
