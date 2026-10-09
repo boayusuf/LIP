@@ -1,6 +1,14 @@
 import { Picker } from '@react-native-picker/picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  Camera,
+  CircleCheckBig,
+  type LucideIcon,
+  Moon,
+  Sun,
+  Sunrise,
+} from 'lucide-react-native';
 import { useState } from 'react';
 import {
     Alert,
@@ -16,6 +24,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../../constants/Colors';
+import { Fonts, Spacing, withAlpha } from '../../../constants/theme';
 import { useGroupStore } from '../../../lib/groupStore';
 import { Priority, RepeatCycle, TimeBlock } from '../../../types';
 
@@ -25,10 +34,10 @@ const PRIORITIES: { value: Priority; label: string; color: string }[] = [
   { value: 'low', label: 'Low', color: Colors.priorityLow },
 ];
 
-const TIME_BLOCKS: { value: TimeBlock; label: string; emoji: string; hours: string }[] = [
-  { value: 'morning', label: 'Morning', emoji: '🌅', hours: '6 AM – 12 PM' },
-  { value: 'afternoon', label: 'Afternoon', emoji: '☀️', hours: '12 – 6 PM' },
-  { value: 'evening', label: 'Evening', emoji: '🌙', hours: '6 PM – 12 AM' },
+const TIME_BLOCKS: { value: TimeBlock; label: string; Icon: LucideIcon; hours: string }[] = [
+  { value: 'morning', label: 'Morning', Icon: Sunrise, hours: '6 AM – 12 PM' },
+  { value: 'afternoon', label: 'Afternoon', Icon: Sun, hours: '12 – 6 PM' },
+  { value: 'evening', label: 'Evening', Icon: Moon, hours: '6 PM – 12 AM' },
 ];
 
 const DURATION_PRESETS = [10, 15, 30, 45, 60, 90, 120];
@@ -182,7 +191,7 @@ export default function ProposeTaskScreen() {
                   styles.optionBtn,
                   priority === p.value && {
                     borderColor: p.color,
-                    backgroundColor: p.color + '15',
+                    backgroundColor: withAlpha(p.color, 0.13),
                   },
                 ]}
                 onPress={() => setPriority(p.value)}
@@ -206,7 +215,10 @@ export default function ProposeTaskScreen() {
                 ]}
                 onPress={() => setTimeBlock(tb.value)}
               >
-                <Text style={styles.timeBlockEmoji}>{tb.emoji}</Text>
+                <tb.Icon
+                  color={timeBlock === tb.value ? Colors.accent : Colors.textMuted}
+                  size={16}
+                />
                 <Text style={[styles.timeBlockLabel, timeBlock === tb.value && styles.timeBlockLabelActive]}>
                   {tb.label}
                 </Text>
@@ -320,25 +332,31 @@ export default function ProposeTaskScreen() {
           <Text style={styles.label}>Requirements</Text>
           <View style={styles.switchRow}>
             <View style={styles.switchInfo}>
-              <Text style={styles.switchLabel}>📸 Require Photo Proof</Text>
+              <View style={styles.switchLabelRow}>
+                <Camera color={Colors.textSecondary} size={14} />
+                <Text style={styles.switchLabel}>Require photo proof</Text>
+              </View>
               <Text style={styles.switchDesc}>Members must upload a photo to complete</Text>
             </View>
             <Switch
               value={requirePhoto}
               onValueChange={setRequirePhoto}
-              trackColor={{ false: Colors.border, true: Colors.accent + '60' }}
+              trackColor={{ false: Colors.border, true: Colors.accentTrack }}
               thumbColor={requirePhoto ? Colors.accent : Colors.textMuted}
             />
           </View>
           <View style={styles.switchRow}>
             <View style={styles.switchInfo}>
-              <Text style={styles.switchLabel}>✅ Require Check-in</Text>
+              <View style={styles.switchLabelRow}>
+                <CircleCheckBig color={Colors.textSecondary} size={14} />
+                <Text style={styles.switchLabel}>Require check-in</Text>
+              </View>
               <Text style={styles.switchDesc}>Members must check in within a time window</Text>
             </View>
             <Switch
               value={requireCheckin}
               onValueChange={setRequireCheckin}
-              trackColor={{ false: Colors.border, true: Colors.accent + '60' }}
+              trackColor={{ false: Colors.border, true: Colors.accentTrack }}
               thumbColor={requireCheckin ? Colors.accent : Colors.textMuted}
             />
           </View>
@@ -451,90 +469,90 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12,
+    paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, paddingBottom: Spacing.md,
     borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
-  backBtn: { padding: 4 },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.textPrimary },
-  saveBtn: { paddingVertical: 6, paddingHorizontal: 14, backgroundColor: Colors.accent, borderRadius: 8 },
-  saveBtnText: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary },
+  backBtn: { padding: Spacing.xs },
+  headerTitle: { fontFamily: Fonts.bold, fontSize: 17, color: Colors.textPrimary },
+  saveBtn: { paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg, backgroundColor: Colors.accent, borderRadius: 8 },
+  saveBtnText: { fontFamily: Fonts.bold, fontSize: 14, color: Colors.textPrimary },
   scrollView: { flex: 1 },
-  scrollContent: { padding: 20, paddingBottom: 40 },
-  label: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary, marginBottom: 8, marginTop: 20 },
+  scrollContent: { padding: Spacing.xl, paddingBottom: Spacing.xxxxl },
+  label: { fontFamily: Fonts.semibold, fontSize: 14, color: Colors.textSecondary, marginBottom: Spacing.sm, marginTop: Spacing.xl },
   input: {
     backgroundColor: Colors.inputBg, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 10, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, color: Colors.textPrimary,
+    borderRadius: 10, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.lg, fontFamily: Fonts.regular, fontSize: 16, color: Colors.textPrimary,
   },
-  notesInput: { minHeight: 80, paddingTop: 14 },
-  optionRow: { flexDirection: 'row', gap: 10 },
+  notesInput: { minHeight: 80, paddingTop: Spacing.lg },
+  optionRow: { flexDirection: 'row', gap: Spacing.md },
   optionBtn: {
-    flex: 1, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8,
+    flex: 1, paddingVertical: Spacing.md, paddingHorizontal: Spacing.md, borderRadius: 8,
     borderWidth: 1, borderColor: Colors.border, alignItems: 'center',
   },
-  optionText: { fontSize: 13, fontWeight: '600', color: Colors.textMuted },
+  optionText: { fontFamily: Fonts.semibold, fontSize: 13, color: Colors.textMuted },
   timeBlockBtn: {
-    flex: 1, paddingVertical: 10, paddingHorizontal: 8, borderRadius: 8,
-    borderWidth: 1, borderColor: Colors.border, alignItems: 'center', gap: 2,
+    flex: 1, paddingVertical: Spacing.md, paddingHorizontal: Spacing.sm, borderRadius: 8,
+    borderWidth: 1, borderColor: Colors.border, alignItems: 'center', gap: Spacing.xxs,
   },
-  timeBlockBtnActive: { borderColor: Colors.accent, backgroundColor: Colors.accent + '15' },
-  timeBlockEmoji: { fontSize: 16 },
-  timeBlockLabel: { fontSize: 13, fontWeight: '600', color: Colors.textMuted },
+  timeBlockBtnActive: { borderColor: Colors.accent, backgroundColor: Colors.accentSubtle },
+  timeBlockLabel: { fontFamily: Fonts.semibold, fontSize: 13, color: Colors.textMuted },
   timeBlockLabelActive: { color: Colors.accent },
-  timeBlockHours: { fontSize: 10, color: Colors.textMuted, marginTop: 1 },
+  timeBlockHours: { fontFamily: Fonts.regular, fontSize: 10, color: Colors.textMuted, marginTop: Spacing.xxs },
   timeBlockHoursActive: { color: Colors.accent },
-  durationScroll: { marginHorizontal: -20, paddingHorizontal: 20 },
-  durationRow: { flexDirection: 'row', gap: 8 },
-  chip: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1, borderColor: Colors.border },
-  chipActive: { borderColor: Colors.accent, backgroundColor: Colors.accent + '15' },
-  chipText: { fontSize: 13, fontWeight: '600', color: Colors.textMuted },
+  durationScroll: { marginHorizontal: -20, paddingHorizontal: Spacing.xl },
+  durationRow: { flexDirection: 'row', gap: Spacing.sm },
+  chip: { paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg, borderRadius: 20, borderWidth: 1, borderColor: Colors.border },
+  chipActive: { borderColor: Colors.accent, backgroundColor: Colors.accentSubtle },
+  chipText: { fontFamily: Fonts.semibold, fontSize: 13, color: Colors.textMuted },
   chipTextActive: { color: Colors.accent },
   pickerContainer: {
-    backgroundColor: Colors.primary, borderRadius: 12, padding: 16, marginTop: 10,
+    backgroundColor: Colors.primary, borderRadius: 12, padding: Spacing.lg, marginTop: Spacing.md,
     borderWidth: 1, borderColor: Colors.border,
   },
-  pickerLabel: { fontSize: 16, fontWeight: '700', color: Colors.accent, textAlign: 'center', marginBottom: 8 },
+  pickerLabel: { fontFamily: Fonts.bold, fontSize: 16, color: Colors.accent, textAlign: 'center', marginBottom: Spacing.sm },
   pickerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   pickerCol: { alignItems: 'center', flex: 1 },
-  pickerColLabel: { fontSize: 12, color: Colors.textMuted, marginBottom: 4 },
+  pickerColLabel: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted, marginBottom: Spacing.xs },
   pickerWrap: { height: 150, width: '100%', overflow: 'hidden' },
   picker: { height: 150, width: '100%', color: Colors.textPrimary },
-  pickerItem: { fontSize: 22, fontWeight: '600', color: Colors.textPrimary, height: 150 },
-  pickerSep: { fontSize: 28, fontWeight: '700', color: Colors.textSecondary, marginTop: 20, paddingHorizontal: 4 },
-  repeatGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  pickerItem: { fontFamily: Fonts.semibold, fontSize: 22, color: Colors.textPrimary, height: 150 },
+  pickerSep: { fontFamily: Fonts.bold, fontSize: 28, color: Colors.textSecondary, marginTop: Spacing.xl, paddingHorizontal: Spacing.xs },
+  repeatGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   switchRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: Colors.primary, borderRadius: 10, padding: 14, marginBottom: 8,
+    backgroundColor: Colors.primary, borderRadius: 10, padding: Spacing.lg, marginBottom: Spacing.sm,
     borderWidth: 1, borderColor: Colors.border,
   },
-  switchInfo: { flex: 1, marginRight: 12 },
-  switchLabel: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
-  switchDesc: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
+  switchInfo: { flex: 1, marginRight: Spacing.md },
+  switchLabelRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  switchLabel: { fontFamily: Fonts.semibold, fontSize: 14, color: Colors.textPrimary },
+  switchDesc: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted, marginTop: Spacing.xxs },
   xpPreview: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    marginTop: 28, paddingVertical: 14, backgroundColor: Colors.primary,
-    borderRadius: 10, borderWidth: 1, borderColor: Colors.gold + '30',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
+    marginTop: Spacing.xxxl, paddingVertical: Spacing.lg, backgroundColor: Colors.primary,
+    borderRadius: 10, borderWidth: 1, borderColor: Colors.goldBorder,
   },
-  xpPreviewLabel: { fontSize: 14, color: Colors.textSecondary },
-  xpPreviewValue: { fontSize: 18, fontWeight: '700', color: Colors.gold },
+  xpPreviewLabel: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textSecondary },
+  xpPreviewValue: { fontFamily: Fonts.bold, fontSize: 18, color: Colors.gold },
   voteNote: {
-    marginTop: 12, padding: 12, backgroundColor: Colors.accent + '10',
-    borderRadius: 8, borderWidth: 1, borderColor: Colors.accent + '20',
+    marginTop: Spacing.md, padding: Spacing.md, backgroundColor: Colors.accentFaint,
+    borderRadius: 8, borderWidth: 1, borderColor: Colors.accentSubtle,
   },
-  voteNoteText: { fontSize: 13, color: Colors.accent, textAlign: 'center' },
+  voteNoteText: { fontFamily: Fonts.regular, fontSize: 13, color: Colors.accent, textAlign: 'center' },
   checkinConfig: {
-    backgroundColor: Colors.primary, borderRadius: 10, padding: 14, marginBottom: 8,
-    borderWidth: 1, borderColor: Colors.border, gap: 10,
+    backgroundColor: Colors.primary, borderRadius: 10, padding: Spacing.lg, marginBottom: Spacing.sm,
+    borderWidth: 1, borderColor: Colors.border, gap: Spacing.md,
   },
-  checkinConfigLabel: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
+  checkinConfigLabel: { fontFamily: Fonts.semibold, fontSize: 13, color: Colors.textSecondary },
   checkinTimeInput: {
     backgroundColor: Colors.inputBg, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 8, paddingHorizontal: 14, paddingVertical: 10, fontSize: 20,
-    color: Colors.textPrimary, fontWeight: '700', letterSpacing: 2, width: 100,
+    borderRadius: 8, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, fontFamily: Fonts.bold, fontSize: 20,
+    color: Colors.textPrimary, letterSpacing: 2, width: 100,
   },
-  bufferRow: { flexDirection: 'row', gap: 8 },
-  checkinPreview: { fontSize: 12, color: Colors.accent, fontWeight: '600' },
-  customRepeatContainer: { marginTop: 10 },
-  customRepeatRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 6 },
-  customRepeatInput: { width: 80, textAlign: 'center', paddingVertical: 10 },
-  customRepeatLabel: { fontSize: 15, color: Colors.textSecondary, fontWeight: '600' },
+  bufferRow: { flexDirection: 'row', gap: Spacing.sm },
+  checkinPreview: { fontFamily: Fonts.semibold, fontSize: 12, color: Colors.accent},
+  customRepeatContainer: { marginTop: Spacing.md },
+  customRepeatRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, marginTop: Spacing.sm },
+  customRepeatInput: { width: 80, textAlign: 'center', paddingVertical: Spacing.md },
+  customRepeatLabel: { fontFamily: Fonts.semibold, fontSize: 15, color: Colors.textSecondary},
 });

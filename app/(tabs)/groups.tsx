@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
+import { Fonts, Radius, Spacing } from '../../constants/theme';
 import { useGroupStore } from '../../lib/groupStore';
 
 export default function GroupsScreen() {
@@ -101,7 +102,9 @@ export default function GroupsScreen() {
       >
         {regularGroups.length === 0 && !groupsLoading ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>👥</Text>
+            <View style={styles.emptyIconWrap}>
+              <Users color={Colors.textMuted} size={28} />
+            </View>
             <Text style={styles.emptyTitle}>No groups yet</Text>
             <Text style={styles.emptySubtitle}>Create a group or join one with an invite code</Text>
             <View style={styles.emptyButtons}>
@@ -242,18 +245,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.md,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontFamily: Fonts.bold, fontSize: 22,
     color: Colors.textPrimary,
   },
   headerButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: Spacing.md,
   },
   headerBtn: {
     width: 38,
@@ -269,41 +271,47 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.sm,
     paddingBottom: 100,
   },
   emptyState: {
     alignItems: 'center',
-    paddingTop: 80,
+    paddingTop: Spacing.hero,
   },
-  emptyEmoji: {
-    fontSize: 48,
-    marginBottom: 12,
+  emptyIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.lg,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold, fontSize: 18,
     color: Colors.textPrimary,
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     color: Colors.textMuted,
-    marginTop: 4,
+    marginTop: Spacing.xs,
     textAlign: 'center',
   },
   emptyButtons: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 24,
+    gap: Spacing.md,
+    marginTop: Spacing.xxl,
   },
   emptyBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: Spacing.sm,
     backgroundColor: Colors.accent,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
     borderRadius: 10,
   },
   emptyBtnOutline: {
@@ -312,8 +320,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.accent,
   },
   emptyBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold, fontSize: 14,
     color: Colors.textPrimary,
   },
   groupCard: {
@@ -321,8 +328,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Colors.primary,
     borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -330,36 +337,34 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: Colors.accent + '20',
+    backgroundColor: Colors.accentSubtle,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: Spacing.md,
   },
   groupIconText: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontFamily: Fonts.bold, fontSize: 18,
     color: Colors.accent,
   },
   groupInfo: {
     flex: 1,
   },
   groupName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold, fontSize: 16,
     color: Colors.textPrimary,
   },
   groupDesc: {
-    fontSize: 13,
+    fontFamily: Fonts.regular, fontSize: 13,
     color: Colors.textMuted,
-    marginTop: 2,
+    marginTop: Spacing.xxs,
   },
   groupMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: Spacing.xs,
   },
   groupMemberCount: {
-    fontSize: 13,
+    fontFamily: Fonts.regular, fontSize: 13,
     color: Colors.textMuted,
   },
   // Modals
@@ -371,68 +376,64 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
   modalTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontFamily: Fonts.bold, fontSize: 17,
     color: Colors.textPrimary,
   },
   modalSaveBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
     backgroundColor: Colors.accent,
     borderRadius: 8,
   },
   modalSaveText: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontFamily: Fonts.bold, fontSize: 14,
     color: Colors.textPrimary,
   },
   modalContent: {
-    padding: 20,
+    padding: Spacing.xl,
   },
   modalLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold, fontSize: 14,
     color: Colors.textSecondary,
-    marginBottom: 8,
-    marginTop: 20,
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.xl,
   },
   modalInput: {
     backgroundColor: Colors.inputBg,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    fontFamily: Fonts.regular, fontSize: 16,
     color: Colors.textPrimary,
   },
   modalInputMultiline: {
     minHeight: 80,
-    paddingTop: 14,
+    paddingTop: Spacing.lg,
   },
   codeInput: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold, fontSize: 20,
     textAlign: 'center',
     letterSpacing: 4,
   },
   modalNote: {
-    marginTop: 16,
-    padding: 12,
+    marginTop: Spacing.lg,
+    padding: Spacing.md,
     backgroundColor: Colors.primary,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: Colors.border,
   },
   modalNoteText: {
-    fontSize: 13,
+    fontFamily: Fonts.regular, fontSize: 13,
     color: Colors.textMuted,
     textAlign: 'center',
   },

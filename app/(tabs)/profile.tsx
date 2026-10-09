@@ -10,7 +10,8 @@ import {
   Star,
   Target,
   Users,
-  X
+  X,
+  Zap,
 } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -28,6 +29,7 @@ import {
 import AvatarImage from '../../components/AvatarImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
+import { Fonts, Radius, Spacing } from '../../constants/theme';
 import { useGroupStore } from '../../lib/groupStore';
 import { useStore } from '../../lib/store';
 import { supabase } from '../../lib/supabase';
@@ -70,11 +72,11 @@ function getDateKey(date: Date): string {
 }
 
 function getHeatmapColor(count: number): string {
-  if (count === 0) return Colors.border;
-  if (count === 1) return Colors.green + '40';
-  if (count === 2) return Colors.green + '70';
-  if (count <= 4) return Colors.green + 'A0';
-  return Colors.green;
+  if (count === 0) return Colors.heat0;
+  if (count === 1) return Colors.heat1;
+  if (count === 2) return Colors.heat2;
+  if (count <= 4) return Colors.heat3;
+  return Colors.heat4;
 }
 
 const CELL_SIZE = Math.floor((SCREEN_WIDTH - 80) / 18);
@@ -177,7 +179,7 @@ function ContributionHeatmap({ data, totalDays }: { data: HeatmapData; totalDays
                           height: CELL_SIZE,
                           backgroundColor: isFuture ? 'transparent' : getHeatmapColor(day.count),
                           borderWidth: isFuture ? 1 : 0,
-                          borderColor: isFuture ? Colors.border + '40' : 'transparent',
+                          borderColor: isFuture ? Colors.borderFaint : 'transparent',
                         },
                       ]}
                     />
@@ -402,7 +404,9 @@ export default function ProfileScreen() {
       <Modal visible={!!levelUpData} transparent animationType="none" onRequestClose={() => setLevelUpData(null)}>
         <TouchableOpacity style={styles.levelUpOverlay} activeOpacity={1} onPress={() => setLevelUpData(null)}>
           <Animated.View style={[styles.levelUpCard, { transform: [{ scale: levelUpScale }] }]}>
-            <Text style={styles.levelUpEmoji}>⚡</Text>
+            <View style={styles.levelUpIconWrap}>
+              <Zap color={Colors.gold} size={30} />
+            </View>
             <Text style={styles.levelUpTitle}>LEVEL UP!</Text>
             <Text style={styles.levelUpLevel}>Level {levelUpData?.level}</Text>
             <Text style={styles.levelUpName}>{levelUpData?.name}</Text>
@@ -532,17 +536,17 @@ export default function ProfileScreen() {
 
 const heatStyles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.primary, borderRadius: 14, padding: 14,
-    marginBottom: 20, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.primary, borderRadius: 14, padding: Spacing.lg,
+    marginBottom: Spacing.xl, borderWidth: 1, borderColor: Colors.border,
   },
-  header: { marginBottom: 10 },
-  title: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
-  monthRow: { height: 16, position: 'relative', marginBottom: 4 },
-  monthLabel: { position: 'absolute', fontSize: 10, color: Colors.textMuted },
+  header: { marginBottom: Spacing.md },
+  title: { fontFamily: Fonts.semibold, fontSize: 13, color: Colors.textSecondary },
+  monthRow: { height: 16, position: 'relative', marginBottom: Spacing.xs },
+  monthLabel: { position: 'absolute', fontFamily: Fonts.regular, fontSize: 10, color: Colors.textMuted },
   gridContainer: { flexDirection: 'row' },
-  dayLabels: { marginRight: 4, justifyContent: 'flex-start' },
+  dayLabels: { marginRight: Spacing.xs, justifyContent: 'flex-start' },
   dayLabel: {
-    fontSize: 10, color: Colors.textMuted, textAlignVertical: 'center',
+    fontFamily: Fonts.regular, fontSize: 10, color: Colors.textMuted, textAlignVertical: 'center',
     lineHeight: CELL_SIZE + CELL_GAP, width: 16,
   },
   grid: { flexDirection: 'row', gap: CELL_GAP },
@@ -550,19 +554,19 @@ const heatStyles = StyleSheet.create({
   cell: { borderRadius: 2 },
   legend: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end',
-    gap: 3, marginTop: 8,
+    gap: Spacing.xs, marginTop: Spacing.sm,
   },
-  legendText: { fontSize: 10, color: Colors.textMuted, marginHorizontal: 2 },
+  legendText: { fontFamily: Fonts.regular, fontSize: 10, color: Colors.textMuted, marginHorizontal: Spacing.xxs },
   legendCell: { width: 10, height: 10, borderRadius: 2 },
 });
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
-  header: { paddingTop: 8, paddingBottom: 16 },
-  headerTitle: { fontSize: 28, fontWeight: '800', color: Colors.textPrimary },
-  profileCard: { alignItems: 'center', marginBottom: 20 },
-  avatarWrapper: { marginBottom: 12, position: 'relative' },
+  scrollContent: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxxxl },
+  header: { paddingTop: Spacing.sm, paddingBottom: Spacing.lg },
+  headerTitle: { fontFamily: Fonts.bold, fontSize: 28, color: Colors.textPrimary },
+  profileCard: { alignItems: 'center', marginBottom: Spacing.xl },
+  avatarWrapper: { marginBottom: Spacing.md, position: 'relative' },
   avatarBorder: { borderWidth: 3, borderColor: Colors.accent },
   cameraBadge: {
     position: 'absolute', bottom: 0, right: 0,
@@ -570,77 +574,82 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.accent, alignItems: 'center', justifyContent: 'center',
     borderWidth: 2, borderColor: Colors.background,
   },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  displayName: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary },
-  editNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.xs },
+  displayName: { fontFamily: Fonts.bold, fontSize: 22, color: Colors.textPrimary },
+  editNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.xs },
   editNameInput: {
-    backgroundColor: Colors.primary, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8,
-    fontSize: 18, color: Colors.textPrimary, borderWidth: 1, borderColor: Colors.accent, minWidth: 180,
+    backgroundColor: Colors.primary, borderRadius: 8, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm,
+    fontFamily: Fonts.regular, fontSize: 18, color: Colors.textPrimary, borderWidth: 1, borderColor: Colors.accent, minWidth: 180,
   },
-  editBtn: { padding: 6 },
-  email: { fontSize: 14, color: Colors.textMuted },
-  joinedText: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
+  editBtn: { padding: Spacing.sm },
+  email: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textMuted },
+  joinedText: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted, marginTop: Spacing.xxs },
   levelCard: {
-    backgroundColor: Colors.primary, borderRadius: 14, padding: 16, marginBottom: 16,
-    borderWidth: 1, borderColor: Colors.gold + '30',
+    backgroundColor: Colors.primary, borderRadius: 14, padding: Spacing.lg, marginBottom: Spacing.lg,
+    borderWidth: 1, borderColor: Colors.goldBorder,
   },
-  levelHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  levelBadge: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  levelNumber: { fontSize: 16, fontWeight: '700', color: Colors.gold },
-  levelName: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
+  levelHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
+  levelBadge: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  levelNumber: { fontFamily: Fonts.bold, fontSize: 16, color: Colors.gold },
+  levelName: { fontFamily: Fonts.semibold, fontSize: 14, color: Colors.textSecondary },
   xpBarBg: {
-    height: 8, backgroundColor: Colors.background, borderRadius: 4, overflow: 'hidden', marginBottom: 8,
+    height: 8, backgroundColor: Colors.background, borderRadius: 4, overflow: 'hidden', marginBottom: Spacing.sm,
   },
   xpBarFill: { height: '100%', backgroundColor: Colors.gold, borderRadius: 4 },
   xpRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  xpTotal: { fontSize: 14, fontWeight: '700', color: Colors.gold },
-  xpToNext: { fontSize: 12, color: Colors.textMuted },
-  statsGrid: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  xpTotal: { fontFamily: Fonts.bold, fontSize: 14, color: Colors.gold },
+  xpToNext: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted },
+  statsGrid: { flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.xl },
   statCard: {
-    flex: 1, backgroundColor: Colors.primary, borderRadius: 12, padding: 14,
-    alignItems: 'center', gap: 6, borderWidth: 1, borderColor: Colors.border,
+    flex: 1, backgroundColor: Colors.primary, borderRadius: 12, padding: Spacing.lg,
+    alignItems: 'center', gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border,
   },
-  statValue: { fontSize: 22, fontWeight: '800', color: Colors.textPrimary },
-  statLabel: { fontSize: 11, color: Colors.textMuted, fontWeight: '600' },
-  section: { marginBottom: 20 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.textSecondary, marginBottom: 10 },
+  statValue: { fontFamily: Fonts.bold, fontSize: 22, color: Colors.textPrimary },
+  statLabel: { fontFamily: Fonts.semibold, fontSize: 11, color: Colors.textMuted},
+  section: { marginBottom: Spacing.xl },
+  sectionTitle: { fontFamily: Fonts.bold, fontSize: 16, color: Colors.textSecondary, marginBottom: Spacing.md },
   groupItem: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.primary,
-    borderRadius: 10, padding: 12, marginBottom: 6, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 10, padding: Spacing.md, marginBottom: Spacing.sm, borderWidth: 1, borderColor: Colors.border,
   },
   groupAvatar: {
-    width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.accent + '20',
-    alignItems: 'center', justifyContent: 'center', marginRight: 12,
+    width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.accentSubtle,
+    alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md,
   },
-  groupAvatarText: { fontSize: 16, fontWeight: '700', color: Colors.accent },
+  groupAvatarText: { fontFamily: Fonts.bold, fontSize: 16, color: Colors.accent },
   groupInfo: { flex: 1 },
-  groupName: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary },
-  groupMembers: { fontSize: 12, color: Colors.textMuted },
+  groupName: { fontFamily: Fonts.semibold, fontSize: 15, color: Colors.textPrimary },
+  groupMembers: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted },
   logoutBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    paddingVertical: 14, borderRadius: 10, borderWidth: 1, borderColor: Colors.priorityUrgent + '40',
-    marginTop: 10,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
+    paddingVertical: Spacing.lg, borderRadius: 10, borderWidth: 1, borderColor: Colors.redBorder,
+    marginTop: Spacing.md,
   },
-  logoutText: { fontSize: 15, fontWeight: '600', color: Colors.priorityUrgent },
+  logoutText: { fontFamily: Fonts.semibold, fontSize: 15, color: Colors.priorityUrgent },
   coachCard: {
-    backgroundColor: Colors.primary, borderRadius: 14, padding: 16, marginBottom: 20,
-    borderWidth: 1, borderColor: Colors.accent + '30',
+    backgroundColor: Colors.primary, borderRadius: 14, padding: Spacing.lg, marginBottom: Spacing.xl,
+    borderWidth: 1, borderColor: Colors.accentBorder,
   },
-  coachHeader: { fontSize: 14, fontWeight: '700', color: Colors.accent, marginBottom: 8 },
-  coachMessage: { fontSize: 14, color: Colors.textSecondary, lineHeight: 22 },
+  coachHeader: { fontFamily: Fonts.bold, fontSize: 14, color: Colors.accent, marginBottom: Spacing.sm },
+  coachMessage: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textSecondary, lineHeight: 22 },
   levelUpOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.75)',
     alignItems: 'center', justifyContent: 'center',
   },
   levelUpCard: {
-    backgroundColor: Colors.primary, borderRadius: 24, padding: 36,
+    backgroundColor: Colors.primary, borderRadius: 24, padding: Spacing.xxxxl,
     alignItems: 'center', borderWidth: 2, borderColor: Colors.gold,
     shadowColor: Colors.gold, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 20,
     minWidth: 240,
   },
-  levelUpEmoji: { fontSize: 52, marginBottom: 8 },
-  levelUpTitle: { fontSize: 22, fontWeight: '900', color: Colors.gold, letterSpacing: 3, marginBottom: 12 },
-  levelUpLevel: { fontSize: 48, fontWeight: '800', color: Colors.textPrimary, lineHeight: 52 },
-  levelUpName: { fontSize: 20, fontWeight: '700', color: Colors.accent, marginTop: 4, marginBottom: 20 },
-  levelUpHint: { fontSize: 12, color: Colors.textMuted },
+  levelUpIconWrap: {
+    width: 64, height: 64, borderRadius: Radius.pill,
+    backgroundColor: Colors.goldSubtle,
+    borderWidth: 1, borderColor: Colors.goldBorder,
+    alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.md,
+  },
+  levelUpTitle: { fontFamily: Fonts.regular, fontSize: 22, color: Colors.gold, letterSpacing: 3, marginBottom: Spacing.md },
+  levelUpLevel: { fontFamily: Fonts.bold, fontSize: 48, color: Colors.textPrimary, lineHeight: 52 },
+  levelUpName: { fontFamily: Fonts.bold, fontSize: 20, color: Colors.accent, marginTop: Spacing.xs, marginBottom: Spacing.xl },
+  levelUpHint: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted },
 });

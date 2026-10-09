@@ -1,5 +1,11 @@
 import { Picker } from '@react-native-picker/picker';
-import { X } from 'lucide-react-native';
+import {
+  type LucideIcon,
+  Moon,
+  Sun,
+  Sunrise,
+  X,
+} from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
   Alert,
@@ -14,6 +20,7 @@ import {
   View,
 } from 'react-native';
 import { Colors } from '../constants/Colors';
+import { Fonts, Spacing, withAlpha } from '../constants/theme';
 import { useStore } from '../lib/store';
 import { Priority, RepeatCycle, Task, TimeBlock } from '../types';
 
@@ -29,10 +36,10 @@ const PRIORITIES: { value: Priority; label: string; color: string }[] = [
   { value: 'low', label: 'Low', color: Colors.priorityLow },
 ];
 
-const TIME_BLOCKS: { value: TimeBlock; label: string; emoji: string; hours: string }[] = [
-  { value: 'morning', label: 'Morning', emoji: '🌅', hours: '6 AM – 12 PM' },
-  { value: 'afternoon', label: 'Afternoon', emoji: '☀️', hours: '12 – 6 PM' },
-  { value: 'evening', label: 'Evening', emoji: '🌙', hours: '6 PM – 12 AM' },
+const TIME_BLOCKS: { value: TimeBlock; label: string; Icon: LucideIcon; hours: string }[] = [
+  { value: 'morning', label: 'Morning', Icon: Sunrise, hours: '6 AM – 12 PM' },
+  { value: 'afternoon', label: 'Afternoon', Icon: Sun, hours: '12 – 6 PM' },
+  { value: 'evening', label: 'Evening', Icon: Moon, hours: '6 PM – 12 AM' },
 ];
 
 const DURATION_PRESETS = [10, 15, 30, 45, 60, 90, 120];
@@ -246,7 +253,7 @@ export default function AddTaskModal({ visible, onClose, editTask }: AddTaskModa
                   styles.optionButton,
                   priority === p.value && {
                     borderColor: p.color,
-                    backgroundColor: p.color + '15',
+                    backgroundColor: withAlpha(p.color, 0.13),
                   },
                 ]}
                 onPress={() => setPriority(p.value)}
@@ -275,7 +282,10 @@ export default function AddTaskModal({ visible, onClose, editTask }: AddTaskModa
                 ]}
                 onPress={() => setTimeBlock(tb.value)}
               >
-                <Text style={styles.timeBlockEmoji}>{tb.emoji}</Text>
+                <tb.Icon
+                  color={timeBlock === tb.value ? Colors.accent : Colors.textMuted}
+                  size={16}
+                />
                 <Text
                   style={[
                     styles.timeBlockLabel,
@@ -440,129 +450,120 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
   headerTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontFamily: Fonts.bold, fontSize: 17,
     color: Colors.textPrimary,
   },
   saveButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
     backgroundColor: Colors.accent,
     borderRadius: 8,
   },
   saveText: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontFamily: Fonts.bold, fontSize: 14,
     color: Colors.textPrimary,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
+    padding: Spacing.xl,
+    paddingBottom: Spacing.xxxxl,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold, fontSize: 14,
     color: Colors.textSecondary,
-    marginBottom: 8,
-    marginTop: 20,
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.xl,
   },
   input: {
     backgroundColor: Colors.inputBg,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    fontFamily: Fonts.regular, fontSize: 16,
     color: Colors.textPrimary,
   },
   notesInput: {
     minHeight: 80,
-    paddingTop: 14,
+    paddingTop: Spacing.lg,
   },
   optionRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: Spacing.md,
   },
   optionButton: {
     flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: Colors.border,
     alignItems: 'center',
   },
   optionText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold, fontSize: 13,
     color: Colors.textMuted,
   },
   timeBlockButton: {
     flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: Colors.border,
     alignItems: 'center',
-    gap: 2,
+    gap: Spacing.xxs,
   },
   timeBlockButtonActive: {
     borderColor: Colors.accent,
-    backgroundColor: Colors.accent + '15',
-  },
-  timeBlockEmoji: {
-    fontSize: 16,
+    backgroundColor: Colors.accentSubtle,
   },
   timeBlockLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold, fontSize: 13,
     color: Colors.textMuted,
   },
   timeBlockLabelActive: {
     color: Colors.accent,
   },
   timeBlockHours: {
-    fontSize: 10,
+    fontFamily: Fonts.regular, fontSize: 10,
     color: Colors.textMuted,
-    marginTop: 1,
+    marginTop: Spacing.xxs,
   },
   timeBlockHoursActive: {
     color: Colors.accent,
   },
   durationScroll: {
     marginHorizontal: -20,
-    paddingHorizontal: 20,
+    paddingHorizontal: Spacing.xl,
   },
   durationRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: Spacing.sm,
   },
   durationChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: Colors.border,
   },
   durationChipActive: {
     borderColor: Colors.accent,
-    backgroundColor: Colors.accent + '15',
+    backgroundColor: Colors.accentSubtle,
   },
   durationText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold, fontSize: 14,
     color: Colors.textMuted,
   },
   durationTextActive: {
@@ -572,17 +573,16 @@ const styles = StyleSheet.create({
   pickerContainer: {
     backgroundColor: Colors.primary,
     borderRadius: 12,
-    padding: 16,
-    marginTop: 10,
+    padding: Spacing.lg,
+    marginTop: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.border,
   },
   pickerLabel: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontFamily: Fonts.bold, fontSize: 16,
     color: Colors.accent,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   pickerRow: {
     flexDirection: 'row',
@@ -594,9 +594,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pickerColumnLabel: {
-    fontSize: 12,
+    fontFamily: Fonts.regular, fontSize: 12,
     color: Colors.textMuted,
-    marginBottom: 4,
+    marginBottom: Spacing.xs,
   },
   pickerWrapper: {
     height: 150,
@@ -609,38 +609,35 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   pickerItem: {
-    fontSize: 22,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold, fontSize: 22,
     color: Colors.textPrimary,
     height: 150,
   },
   pickerSeparator: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontFamily: Fonts.bold, fontSize: 28,
     color: Colors.textSecondary,
-    marginTop: 20,
-    paddingHorizontal: 4,
+    marginTop: Spacing.xl,
+    paddingHorizontal: Spacing.xs,
   },
   // Repeat
   repeatGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: Spacing.sm,
   },
   repeatChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: Colors.border,
   },
   repeatChipActive: {
     borderColor: Colors.accent,
-    backgroundColor: Colors.accent + '15',
+    backgroundColor: Colors.accentSubtle,
   },
   repeatChipText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold, fontSize: 13,
     color: Colors.textMuted,
   },
   repeatChipTextActive: {
@@ -649,11 +646,11 @@ const styles = StyleSheet.create({
   customRepeatRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginTop: 10,
+    gap: Spacing.md,
+    marginTop: Spacing.md,
   },
   customRepeatLabel: {
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     color: Colors.textSecondary,
   },
   customRepeatInput: {
@@ -661,9 +658,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.accent,
     borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 16,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    fontFamily: Fonts.regular, fontSize: 16,
     color: Colors.textPrimary,
     width: 60,
     textAlign: 'center',
@@ -672,21 +669,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    marginTop: 28,
-    paddingVertical: 14,
+    gap: Spacing.sm,
+    marginTop: Spacing.xxxl,
+    paddingVertical: Spacing.lg,
     backgroundColor: Colors.primary,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: Colors.gold + '30',
+    borderColor: Colors.goldBorder,
   },
   xpPreviewLabel: {
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     color: Colors.textSecondary,
   },
   xpPreviewValue: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontFamily: Fonts.bold, fontSize: 18,
     color: Colors.gold,
   },
 });

@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
+import { Fonts, Spacing } from '../../constants/theme';
 import { useStore } from '../../lib/store';
 
 export default function NotificationsScreen() {
@@ -51,25 +52,25 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 28 },
+  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: Spacing.xxxl },
   content: { flex: 1, justifyContent: 'center' },
-  emoji: { fontSize: 52, marginBottom: 16 },
-  title: { fontSize: 28, fontWeight: '800', color: Colors.textPrimary, marginBottom: 8 },
-  sub: { fontSize: 15, color: Colors.textMuted, marginBottom: 28, lineHeight: 22 },
+  emoji: { fontFamily: Fonts.regular, fontSize: 52, marginBottom: Spacing.lg },
+  title: { fontFamily: Fonts.bold, fontSize: 28, color: Colors.textPrimary, marginBottom: Spacing.sm },
+  sub: { fontFamily: Fonts.regular, fontSize: 15, color: Colors.textMuted, marginBottom: Spacing.xxxl, lineHeight: 22 },
   card: {
-    backgroundColor: Colors.primary, borderRadius: 14, padding: 18,
-    borderWidth: 1, borderColor: Colors.border, gap: 12,
+    backgroundColor: Colors.primary, borderRadius: 14, padding: Spacing.xl,
+    borderWidth: 1, borderColor: Colors.border, gap: Spacing.md,
   },
-  cardRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  cardDot: { color: Colors.accent, fontSize: 18, fontWeight: '700' },
-  cardText: { fontSize: 15, color: Colors.textPrimary },
+  cardRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  cardDot: { color: Colors.accent, fontFamily: Fonts.bold, fontSize: 18},
+  cardText: { fontFamily: Fonts.regular, fontSize: 15, color: Colors.textPrimary },
   btnPrimary: {
-    backgroundColor: Colors.accent, borderRadius: 14, paddingVertical: 16,
-    alignItems: 'center', marginBottom: 12,
+    backgroundColor: Colors.accent, borderRadius: 14, paddingVertical: Spacing.lg,
+    alignItems: 'center', marginBottom: Spacing.md,
   },
-  btnPrimaryText: { fontSize: 17, fontWeight: '700', color: Colors.textPrimary },
+  btnPrimaryText: { fontFamily: Fonts.bold, fontSize: 17, color: Colors.textPrimary },
   btnSecondary: {
-    borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginBottom: 16,
+    borderRadius: 14, paddingVertical: Spacing.lg, alignItems: 'center', marginBottom: Spacing.lg,
   },
-  btnSecondaryText: { fontSize: 15, color: Colors.textMuted },
+  btnSecondaryText: { fontFamily: Fonts.regular, fontSize: 15, color: Colors.textMuted },
 });

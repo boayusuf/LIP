@@ -6,12 +6,15 @@ import {
   ArrowLeft,
   Camera,
   Check,
+  CheckCheck,
   CheckCircle,
   ChevronDown,
   ChevronRight,
+  ClipboardList,
   Clock,
   Copy,
   LogOut,
+  MapPin,
   Maximize2,
   MessageCircle,
   Minimize2,
@@ -21,7 +24,8 @@ import {
   Square,
   ThumbsDown,
   ThumbsUp,
-  X
+  Vote,
+  X,
 } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -40,6 +44,7 @@ import Svg, { Circle } from 'react-native-svg';
 import AvatarImage from '../../components/AvatarImage';
 import TimerDisplay from '../../components/TimerDisplay';
 import { Colors } from '../../constants/Colors';
+import { Fonts, Spacing, withAlpha } from '../../constants/theme';
 import { useGroupStore } from '../../lib/groupStore';
 import { useStore } from '../../lib/store';
 
@@ -247,7 +252,7 @@ export default function GroupDetailScreen() {
         <TouchableOpacity style={styles.headerCenter} onPress={() => setShowGroupInfo(true)}>
           <Text style={styles.headerTitle} numberOfLines={1}>{currentGroup.name}</Text>
           <Text style={styles.headerSub}>
-            {memberCount} members{(currentGroup as any).group_streak > 0 ? ` · 🔥 ${(currentGroup as any).group_streak} day streak` : ''}{currentGroup.group_xp ? ` · ⭐ Lvl ${getGroupLevel(currentGroup.group_xp)}` : ''} · tap for info
+            {memberCount} members{(currentGroup as any).group_streak > 0 ? ` · ${(currentGroup as any).group_streak} day streak` : ''}{currentGroup.group_xp ? ` · Lvl ${getGroupLevel(currentGroup.group_xp)}` : ''} · tap for info
           </Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={handleShareCode} style={styles.codeBtn}>
@@ -291,7 +296,8 @@ export default function GroupDetailScreen() {
           <View style={styles.section}>
             <TouchableOpacity style={styles.sectionHeader} onPress={() => setShowVotes(!showVotes)}>
               {showVotes ? <ChevronDown color={Colors.textSecondary} size={18} /> : <ChevronRight color={Colors.textSecondary} size={18} />}
-              <Text style={styles.sectionTitle}>🗳️ Pending Votes ({pendingProposals.length})</Text>
+              <Vote color={Colors.textSecondary} size={15} />
+              <Text style={styles.sectionTitle}>Pending Votes ({pendingProposals.length})</Text>
             </TouchableOpacity>
             {showVotes && pendingProposals.map((proposal) => {
               const { yes, no, myVote, needed } = getVoteSummary(proposal);
@@ -302,9 +308,9 @@ export default function GroupDetailScreen() {
                     <Text style={styles.proposalTitle}>{proposal.title}</Text>
                     <View style={[styles.priorityBadge, {
                       backgroundColor:
-                        proposal.priority === 'urgent' ? Colors.priorityUrgent + '20' :
-                        proposal.priority === 'important' ? Colors.priorityImportant + '20' :
-                        Colors.priorityLow + '20',
+                        proposal.priority === 'urgent' ? Colors.redSubtle :
+                        proposal.priority === 'important' ? Colors.goldSubtle :
+                        Colors.slateSubtle,
                     }]}>
                       <Text style={[styles.priorityText, {
                         color:
@@ -317,8 +323,8 @@ export default function GroupDetailScreen() {
                   <View style={styles.proposalMeta}>
                     <Text style={styles.proposalMetaText}>
                       {proposal.estimated_duration_min}min · {proposal.time_block}
-                      {proposal.require_photo ? ' · 📸' : ''}
-                      {proposal.require_checkin ? ' · ✅' : ''}
+                      {proposal.require_photo ? ' · Photo' : ''}
+                      {proposal.require_checkin ? ' · Check-in' : ''}
                     </Text>
                   </View>
                   <View style={styles.voteRow}>
@@ -355,7 +361,8 @@ export default function GroupDetailScreen() {
         <View style={styles.section}>
           <TouchableOpacity style={styles.sectionHeader} onPress={() => setShowActive(!showActive)}>
             {showActive ? <ChevronDown color={Colors.textSecondary} size={18} /> : <ChevronRight color={Colors.textSecondary} size={18} />}
-            <Text style={styles.sectionTitle}>📋 Group Tasks ({myActiveTasks.length})</Text>
+            <ClipboardList color={Colors.textSecondary} size={15} />
+            <Text style={styles.sectionTitle}>Group Tasks ({myActiveTasks.length})</Text>
           </TouchableOpacity>
           {showActive && (myActiveTasks.length === 0 ? (
             <View style={styles.emptyTasks}>
@@ -386,9 +393,12 @@ export default function GroupDetailScreen() {
                     const cs = checkinStatus!;
                     const bannerColor = cs.status === 'open' ? Colors.green : cs.status === 'closed' ? Colors.priorityUrgent : cs.status === 'upcoming' ? Colors.accent : Colors.textMuted;
                     return (
-                      <View style={[styles.checkinBanner, { borderColor: bannerColor + '50', backgroundColor: bannerColor + '15' }]}>
+                      <View style={[styles.checkinBanner, { borderColor: withAlpha(bannerColor, 0.32), backgroundColor: withAlpha(bannerColor, 0.12) }]}>
                         <View style={{ flex: 1 }}>
-                          <Text style={[styles.checkinBannerLabel, { color: bannerColor }]}>📍 CHECK IN</Text>
+                          <View style={styles.checkinBannerLabelRow}>
+                            <MapPin color={bannerColor} size={11} />
+                            <Text style={[styles.checkinBannerLabel, { color: bannerColor }]}>CHECK IN</Text>
+                          </View>
                           <Text style={styles.checkinBannerTime}>{openStr} – {closeStr} · {buf}min window</Text>
                         </View>
                         <Text style={[styles.checkinBannerStatus, { color: bannerColor }]}>{cs.label}</Text>
@@ -486,14 +496,14 @@ export default function GroupDetailScreen() {
                   </View>
                   <Text style={styles.taskMeta}>
                     {task.estimated_duration_min}min · {task.priority} · {task.time_block}
-                    {task.require_photo ? ' · 📸' : ''}
-                    {task.require_checkin ? ' · 📍' : ''}
+                    {task.require_photo ? ' · Photo' : ''}
+                    {task.require_checkin ? ' · Check-in' : ''}
                   </Text>
                   {task.require_checkin && (() => {
                     const cs = getCheckinStatus(task);
                     if (cs.status === 'none') return null;
                     const color = cs.status === 'closed' || cs.status === 'too_early' ? Colors.priorityUrgent : cs.status === 'open' ? Colors.green : Colors.textMuted;
-                    return <Text style={[styles.checkinBadge, { color }]}>✅ {cs.label}</Text>;
+                    return <Text style={[styles.checkinBadge, { color }]}>{cs.label}</Text>;
                   })()}
                   {/* Member progress */}
                   <View style={styles.progressRow}>
@@ -531,7 +541,8 @@ export default function GroupDetailScreen() {
           <View style={styles.section}>
             <TouchableOpacity style={styles.sectionHeader} onPress={() => setShowUpcoming(!showUpcoming)}>
               {showUpcoming ? <ChevronDown color={Colors.textSecondary} size={18} /> : <ChevronRight color={Colors.textSecondary} size={18} />}
-              <Text style={styles.sectionTitle}>📍 Upcoming Check-ins ({upcomingCheckins.length})</Text>
+              <MapPin color={Colors.textSecondary} size={15} />
+              <Text style={styles.sectionTitle}>Upcoming Check-ins ({upcomingCheckins.length})</Text>
             </TouchableOpacity>
             {showUpcoming && upcomingCheckins.map((task) => {
               const [h, m] = task.checkin_time!.split(':').map(Number);
@@ -543,8 +554,8 @@ export default function GroupDetailScreen() {
                 <View key={task.id} style={[styles.taskCard, styles.upcomingCard]}>
                   <View style={styles.taskHeader}>
                     <Text style={styles.taskTitle}>{task.title}</Text>
-                    <View style={[styles.checkinBanner, { borderColor: Colors.textMuted + '40', backgroundColor: Colors.textMuted + '10', marginBottom: 0, flex: 0 }]}>
-                      <Text style={[styles.checkinBannerLabel, { color: Colors.textMuted }]}>📍</Text>
+                    <View style={[styles.checkinBanner, { borderColor: Colors.mutedBorder, backgroundColor: Colors.mutedFaint, marginBottom: Spacing.none, flex: 0 }]}>
+                      <MapPin color={Colors.textMuted} size={12} />
                     </View>
                   </View>
                   <Text style={styles.taskMeta}>
@@ -602,7 +613,8 @@ export default function GroupDetailScreen() {
           <View style={styles.section}>
             <TouchableOpacity style={styles.sectionHeader} onPress={() => setShowFullyCompleted(!showFullyCompleted)}>
               {showFullyCompleted ? <ChevronDown color={Colors.textSecondary} size={18} /> : <ChevronRight color={Colors.textSecondary} size={18} />}
-              <Text style={styles.sectionTitle}>✅ Completed ({fullyCompleted.length})</Text>
+              <CheckCheck color={Colors.textSecondary} size={15} />
+              <Text style={styles.sectionTitle}>Completed ({fullyCompleted.length})</Text>
             </TouchableOpacity>
             {showFullyCompleted && fullyCompleted.map((task) => (
               <TouchableOpacity key={task.id} style={[styles.taskCard, styles.taskCardDone]} onPress={() => setSelectedTask(task)}>
@@ -658,7 +670,7 @@ export default function GroupDetailScreen() {
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Group Level</Text>
                 <Text style={styles.infoValue}>
-                  ⭐ Level {getGroupLevel(currentGroup.group_xp)} · {currentGroup.group_xp} XP
+                  Level {getGroupLevel(currentGroup.group_xp)} · {currentGroup.group_xp} XP
                 </Text>
               </View>
             )}
@@ -671,7 +683,7 @@ export default function GroupDetailScreen() {
                     size={40}
                     name={getMemberName(m)}
                     avatarUrl={m.profile?.avatar_url ?? null}
-                    style={{ marginRight: 12 }}
+                    style={{ marginRight: Spacing.md }}
                   />
                   <View style={styles.memberInfo}>
                     <Text style={styles.memberName}>{getMemberName(m)}</Text>
@@ -918,12 +930,12 @@ export default function GroupDetailScreen() {
 
             {selectedTask?.status && (
               <View style={[styles.statusBadge, {
-                backgroundColor: selectedTask.status === 'pending' ? Colors.gold + '15' : Colors.green + '15',
+                backgroundColor: selectedTask.status === 'pending' ? Colors.goldSubtle : Colors.greenSubtle,
               }]}>
                 <Text style={[styles.statusText, {
                   color: selectedTask.status === 'pending' ? Colors.gold : Colors.green,
                 }]}>
-                  {selectedTask.status === 'pending' ? '🗳️ Waiting for votes' : '✅ Approved'}
+                  {selectedTask.status === 'pending' ? 'Waiting for votes' : 'Approved'}
                 </Text>
               </View>
             )}
@@ -944,15 +956,15 @@ export default function GroupDetailScreen() {
                         size={32}
                         name={name}
                         avatarUrl={c.profile?.avatar_url ?? null}
-                        style={{ marginRight: 10, borderWidth: 2, borderColor: isDone ? Colors.green : Colors.border }}
+                        style={{ marginRight: Spacing.md, borderWidth: 2, borderColor: isDone ? Colors.green : Colors.border }}
                       />
                       <View style={styles.memberProgressInfo}>
                         <Text style={[styles.memberProgressName, isDone && { color: Colors.green }]}>{name}</Text>
                         {isDone && completedTime && (
-                          <Text style={styles.memberProgressTime}>✅ {completedTime} · +{c.xp_earned} XP</Text>
+                          <Text style={styles.memberProgressTime}>{completedTime} · +{c.xp_earned} XP</Text>
                         )}
                         {!isDone && c.status === 'doing' && (
-                          <Text style={styles.memberProgressTime}>⏱️ In progress</Text>
+                          <Text style={styles.memberProgressTime}>In progress</Text>
                         )}
                         {!isDone && c.status === 'todo' && (
                           <Text style={styles.memberProgressTime}>⏳ Not started</Text>
@@ -972,97 +984,98 @@ export default function GroupDetailScreen() {
 //abc
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  loadingText: { color: Colors.textMuted, textAlign: 'center', marginTop: 40 },
+  loadingText: { color: Colors.textMuted, textAlign: 'center', marginTop: Spacing.xxxxl },
   header: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16,
-    paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.border,
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
-  backBtn: { padding: 4, marginRight: 10 },
+  backBtn: { padding: Spacing.xs, marginRight: Spacing.md },
   headerCenter: { flex: 1 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary },
-  headerSub: { fontSize: 12, color: Colors.textMuted },
+  headerTitle: { fontFamily: Fonts.bold, fontSize: 18, color: Colors.textPrimary },
+  headerSub: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted },
   codeBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.primary,
-    paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: Colors.border,
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, backgroundColor: Colors.primary,
+    paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, borderRadius: 8, borderWidth: 1, borderColor: Colors.border,
   },
-  codeBtnText: { fontSize: 12, fontWeight: '600', color: Colors.accent, letterSpacing: 1 },
-  tabBar: { flexDirection: 'row', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, gap: 4 },
+  codeBtnText: { fontFamily: Fonts.semibold, fontSize: 12, color: Colors.accent, letterSpacing: 1 },
+  tabBar: { flexDirection: 'row', paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, paddingBottom: Spacing.xs, gap: Spacing.xs },
   tab: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 6, paddingVertical: 10, borderRadius: 8,
+    gap: Spacing.sm, paddingVertical: Spacing.md, borderRadius: 8,
   },
-  tabActive: { backgroundColor: Colors.accent + '15' },
-  tabText: { fontSize: 13, fontWeight: '600', color: Colors.textMuted },
+  tabActive: { backgroundColor: Colors.accentSubtle },
+  tabText: { fontFamily: Fonts.semibold, fontSize: 13, color: Colors.textMuted },
   tabTextActive: { color: Colors.accent },
   scrollView: { flex: 1 },
-  scrollContent: { paddingHorizontal: 16, paddingTop: 12 },
-  section: { marginBottom: 16 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: Colors.textSecondary },
+  scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md },
+  section: { marginBottom: Spacing.lg },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.md },
+  sectionTitle: { fontFamily: Fonts.bold, fontSize: 15, color: Colors.textSecondary },
   proposalCard: {
-    backgroundColor: Colors.primary, borderRadius: 12, padding: 14, marginBottom: 8,
+    backgroundColor: Colors.primary, borderRadius: 12, padding: Spacing.lg, marginBottom: Spacing.sm,
     borderWidth: 1, borderColor: Colors.border,
   },
   proposalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  proposalTitle: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary, flex: 1 },
-  priorityBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, marginLeft: 8 },
-  priorityText: { fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
-  proposalMeta: { marginTop: 8 },
-  proposalMetaText: { fontSize: 12, color: Colors.textMuted },
+  proposalTitle: { fontFamily: Fonts.semibold, fontSize: 15, color: Colors.textPrimary, flex: 1 },
+  priorityBadge: { paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs, borderRadius: 6, marginLeft: Spacing.sm },
+  priorityText: { fontFamily: Fonts.semibold, fontSize: 11, textTransform: 'capitalize' },
+  proposalMeta: { marginTop: Spacing.sm },
+  proposalMetaText: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted },
   voteRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: Colors.border,
+    marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.border,
   },
-  voteCount: { flexDirection: 'row', gap: 10, alignItems: 'center' },
-  voteYes: { fontSize: 13, color: Colors.green, fontWeight: '600' },
-  voteNo: { fontSize: 13, color: Colors.priorityUrgent, fontWeight: '600' },
-  voteNeeded: { fontSize: 11, color: Colors.textMuted },
-  voteButtons: { flexDirection: 'row', gap: 8 },
-  voteBtn: { padding: 8, borderRadius: 8, borderWidth: 1, borderColor: Colors.border },
-  voteBtnActiveYes: { backgroundColor: Colors.green + '20', borderColor: Colors.green },
-  voteBtnActiveNo: { backgroundColor: Colors.priorityUrgent + '20', borderColor: Colors.priorityUrgent },
-  proposerLabel: { fontSize: 12, color: Colors.textMuted, fontStyle: 'italic' },
-  emptyTasks: { alignItems: 'center', paddingVertical: 20 },
-  emptyTasksText: { fontSize: 14, color: Colors.textMuted },
-  emptyTasksSub: { fontSize: 12, color: Colors.textMuted, marginTop: 4 },
+  voteCount: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center' },
+  voteYes: { fontFamily: Fonts.semibold, fontSize: 13, color: Colors.green},
+  voteNo: { fontFamily: Fonts.semibold, fontSize: 13, color: Colors.priorityUrgent},
+  voteNeeded: { fontFamily: Fonts.regular, fontSize: 11, color: Colors.textMuted },
+  voteButtons: { flexDirection: 'row', gap: Spacing.sm },
+  voteBtn: { padding: Spacing.sm, borderRadius: 8, borderWidth: 1, borderColor: Colors.border },
+  voteBtnActiveYes: { backgroundColor: Colors.greenSubtle, borderColor: Colors.green },
+  voteBtnActiveNo: { backgroundColor: Colors.redSubtle, borderColor: Colors.priorityUrgent },
+  proposerLabel: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted, fontStyle: 'italic' },
+  emptyTasks: { alignItems: 'center', paddingVertical: Spacing.xl },
+  emptyTasksText: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textMuted },
+  emptyTasksSub: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted, marginTop: Spacing.xs },
   taskCard: {
-    backgroundColor: Colors.primary, borderRadius: 10, padding: 12, marginBottom: 6,
+    backgroundColor: Colors.primary, borderRadius: 10, padding: Spacing.md, marginBottom: Spacing.sm,
     borderWidth: 1, borderColor: Colors.border,
   },
   taskCardDone: { opacity: 0.6 },
   taskHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  taskTitle: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary, flex: 1 },
-  taskTitleDone: { fontSize: 14, color: Colors.textMuted, textDecorationLine: 'line-through' },
-  taskXP: { fontSize: 13, fontWeight: '600', color: Colors.gold, marginTop: 4 },
-  taskActions: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  timerArea: { alignItems: 'flex-end', gap: 4 },
-  timerBtns: { flexDirection: 'row', gap: 4 },
+  taskTitle: { fontFamily: Fonts.semibold, fontSize: 15, color: Colors.textPrimary, flex: 1 },
+  taskTitleDone: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textMuted, textDecorationLine: 'line-through' },
+  taskXP: { fontFamily: Fonts.semibold, fontSize: 13, color: Colors.gold, marginTop: Spacing.xs },
+  taskActions: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' },
+  timerArea: { alignItems: 'flex-end', gap: Spacing.xs },
+  timerBtns: { flexDirection: 'row', gap: Spacing.xs },
   timerBtn: {
-    padding: 8, borderRadius: 8, backgroundColor: Colors.background,
+    padding: Spacing.sm, borderRadius: 8, backgroundColor: Colors.background,
     borderWidth: 1, borderColor: Colors.border,
   },
   completeBtn: {
-    padding: 8, borderRadius: 8, backgroundColor: Colors.green + '15',
-    borderWidth: 1, borderColor: Colors.green + '30',
+    padding: Spacing.sm, borderRadius: 8, backgroundColor: Colors.greenSubtle,
+    borderWidth: 1, borderColor: Colors.greenBorder,
   },
-  taskMeta: { fontSize: 12, color: Colors.textMuted, marginTop: 6 },
-  checkinBadge: { fontSize: 11, fontWeight: '600', marginTop: 4 },
-  checkinBadgeOpen: { fontSize: 11, fontWeight: '600', marginTop: 4, color: Colors.textMuted },
+  taskMeta: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted, marginTop: Spacing.sm },
+  checkinBadge: { fontFamily: Fonts.semibold, fontSize: 11, marginTop: Spacing.xs },
+  checkinBadgeOpen: { fontFamily: Fonts.semibold, fontSize: 11, marginTop: Spacing.xs, color: Colors.textMuted },
   upcomingCard: { opacity: 0.75, borderStyle: 'dashed' },
   checkinBanner: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7,
-    marginBottom: 8,
+    borderWidth: 1, borderRadius: 8, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
+    marginBottom: Spacing.sm,
   },
-  checkinBannerLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1 },
-  checkinBannerTime: { fontSize: 12, color: Colors.textMuted, marginTop: 1 },
-  checkinBannerStatus: { fontSize: 11, fontWeight: '700' },
+  checkinBannerLabelRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+  checkinBannerLabel: { fontFamily: Fonts.bold, fontSize: 11, letterSpacing: 1 },
+  checkinBannerTime: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted, marginTop: Spacing.xxs },
+  checkinBannerStatus: { fontFamily: Fonts.bold, fontSize: 11},
   checkinCompleteBtn: { width: 40, height: 40, borderRadius: 8 },
   leaveBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: Colors.priorityUrgent + '40',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
+    paddingVertical: Spacing.md, borderRadius: 10, borderWidth: 1, borderColor: Colors.redBorder,
   },
-  leaveBtnText: { fontSize: 14, fontWeight: '600', color: Colors.priorityUrgent },
+  leaveBtnText: { fontFamily: Fonts.semibold, fontSize: 14, color: Colors.priorityUrgent },
   fab: {
     position: 'absolute', bottom: 24, right: 20, width: 58, height: 58, borderRadius: 29,
     backgroundColor: Colors.accent, alignItems: 'center', justifyContent: 'center',
@@ -1072,111 +1085,111 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
   modalContent: {
     backgroundColor: Colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    padding: 20, maxHeight: '80%',
+    padding: Spacing.xl, maxHeight: '80%',
   },
   modalHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.lg,
   },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary, flex: 1 },
-  groupDesc: { fontSize: 14, color: Colors.textSecondary, marginBottom: 16, lineHeight: 20 },
+  modalTitle: { fontFamily: Fonts.bold, fontSize: 20, color: Colors.textPrimary, flex: 1 },
+  groupDesc: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textSecondary, marginBottom: Spacing.lg, lineHeight: 20 },
   infoRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginBottom: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: Colors.border,
+    marginBottom: Spacing.xl, paddingBottom: Spacing.lg, borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
-  infoLabel: { fontSize: 14, color: Colors.textMuted },
-  infoCodeBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  infoCode: { fontSize: 16, fontWeight: '700', color: Colors.accent, letterSpacing: 2 },
-  infoValue: { fontSize: 14, fontWeight: '600', color: Colors.gold },
-  membersTitle: { fontSize: 15, fontWeight: '700', color: Colors.textSecondary, marginBottom: 12 },
-  membersList: { maxHeight: 300, marginBottom: 16 },
+  infoLabel: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textMuted },
+  infoCodeBtn: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  infoCode: { fontFamily: Fonts.bold, fontSize: 16, color: Colors.accent, letterSpacing: 2 },
+  infoValue: { fontFamily: Fonts.semibold, fontSize: 14, color: Colors.gold },
+  membersTitle: { fontFamily: Fonts.bold, fontSize: 15, color: Colors.textSecondary, marginBottom: Spacing.md },
+  membersList: { maxHeight: 300, marginBottom: Spacing.lg },
   memberItem: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: 10,
+    flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md,
     borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   memberAvatar: {
-    width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.accent + '20',
-    alignItems: 'center', justifyContent: 'center', marginRight: 12,
+    width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.accentSubtle,
+    alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md,
   },
-  memberAvatarText: { fontSize: 16, fontWeight: '700', color: Colors.accent },
+  memberAvatarText: { fontFamily: Fonts.bold, fontSize: 16, color: Colors.accent },
   memberInfo: { flex: 1 },
-  memberName: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary },
-  memberEmail: { fontSize: 12, color: Colors.textMuted },
-  adminBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: Colors.gold + '20' },
-  adminBadgeText: { fontSize: 11, fontWeight: '600', color: Colors.gold },
-  detailNotes: { fontSize: 14, color: Colors.textSecondary, marginBottom: 16, lineHeight: 20 },
-  detailGrid: { flexDirection: 'row', gap: 12, marginBottom: 16 },
+  memberName: { fontFamily: Fonts.semibold, fontSize: 15, color: Colors.textPrimary },
+  memberEmail: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted },
+  adminBadge: { paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs, borderRadius: 6, backgroundColor: Colors.goldSubtle },
+  adminBadgeText: { fontFamily: Fonts.semibold, fontSize: 11, color: Colors.gold },
+  detailNotes: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textSecondary, marginBottom: Spacing.lg, lineHeight: 20 },
+  detailGrid: { flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.lg },
   detailItem: {
-    flex: 1, backgroundColor: Colors.primary, borderRadius: 10, padding: 12,
-    alignItems: 'center', gap: 4, borderWidth: 1, borderColor: Colors.border,
+    flex: 1, backgroundColor: Colors.primary, borderRadius: 10, padding: Spacing.md,
+    alignItems: 'center', gap: Spacing.xs, borderWidth: 1, borderColor: Colors.border,
   },
-  detailLabel: { fontSize: 11, color: Colors.textMuted },
-  detailValue: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
-  detailFlags: { gap: 8, marginBottom: 16 },
-  flagItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  flagText: { fontSize: 14, color: Colors.textSecondary },
-  statusBadge: { padding: 12, borderRadius: 10, alignItems: 'center' },
-  statusText: { fontSize: 14, fontWeight: '600' },
+  detailLabel: { fontFamily: Fonts.regular, fontSize: 11, color: Colors.textMuted },
+  detailValue: { fontFamily: Fonts.semibold, fontSize: 14, color: Colors.textPrimary },
+  detailFlags: { gap: Spacing.sm, marginBottom: Spacing.lg },
+  flagItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  flagText: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textSecondary },
+  statusBadge: { padding: Spacing.md, borderRadius: 10, alignItems: 'center' },
+  statusText: { fontFamily: Fonts.semibold, fontSize: 14},
   // Member progress on task cards
   progressRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: Colors.border,
+    marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Colors.border,
   },
-  progressText: { fontSize: 12, fontWeight: '600', color: Colors.textMuted },
-  memberDots: { flexDirection: 'row', gap: 4 },
+  progressText: { fontFamily: Fonts.semibold, fontSize: 12, color: Colors.textMuted },
+  memberDots: { flexDirection: 'row', gap: Spacing.xs },
   memberDot: {
     width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center',
   },
-  memberDotText: { fontSize: 10, fontWeight: '700', color: Colors.textPrimary },
+  memberDotText: { fontFamily: Fonts.bold, fontSize: 10, color: Colors.textPrimary },
   // Member progress in detail modal
-  memberProgress: { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: Colors.border },
-  memberProgressTitle: { fontSize: 15, fontWeight: '700', color: Colors.textSecondary, marginBottom: 10 },
-  memberProgressItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  memberProgress: { marginTop: Spacing.lg, paddingTop: Spacing.lg, borderTopWidth: 1, borderTopColor: Colors.border },
+  memberProgressTitle: { fontFamily: Fonts.bold, fontSize: 15, color: Colors.textSecondary, marginBottom: Spacing.md },
+  memberProgressItem: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
   memberProgressDot: {
-    width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 10,
+    width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md,
   },
-  memberProgressDotText: { fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
+  memberProgressDotText: { fontFamily: Fonts.bold, fontSize: 13, color: Colors.textPrimary },
   memberProgressInfo: { flex: 1 },
-  memberProgressName: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
-  memberProgressTime: { fontSize: 12, color: Colors.textMuted, marginTop: 1 },
+  memberProgressName: { fontFamily: Fonts.semibold, fontSize: 14, color: Colors.textPrimary },
+  memberProgressTime: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted, marginTop: Spacing.xxs },
   // Photo preview modal
-  photoPreview: { width: '100%', height: 260, borderRadius: 12, marginBottom: 16 },
-  photoPreviewActions: { flexDirection: 'row', gap: 12, width: '100%' },
+  photoPreview: { width: '100%', height: 260, borderRadius: 12, marginBottom: Spacing.lg },
+  photoPreviewActions: { flexDirection: 'row', gap: Spacing.md, width: '100%' },
   photoRetakeBtn: {
-    flex: 1, paddingVertical: 12, borderRadius: 10,
+    flex: 1, paddingVertical: Spacing.md, borderRadius: 10,
     borderWidth: 1, borderColor: Colors.border, alignItems: 'center',
   },
-  photoRetakeBtnText: { fontSize: 15, fontWeight: '600', color: Colors.textSecondary },
+  photoRetakeBtnText: { fontFamily: Fonts.semibold, fontSize: 15, color: Colors.textSecondary },
   photoConfirmBtn: {
-    flex: 1, paddingVertical: 12, borderRadius: 10,
+    flex: 1, paddingVertical: Spacing.md, borderRadius: 10,
     backgroundColor: Colors.green, alignItems: 'center',
   },
-  photoConfirmBtnText: { fontSize: 15, fontWeight: '700', color: Colors.background },
+  photoConfirmBtnText: { fontFamily: Fonts.bold, fontSize: 15, color: Colors.background },
   // Check-in modal
-  checkinDesc: { fontSize: 14, color: Colors.textSecondary, marginBottom: 12, lineHeight: 20 },
+  checkinDesc: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textSecondary, marginBottom: Spacing.md, lineHeight: 20 },
   checkinInput: {
     backgroundColor: Colors.inputBg, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 10, padding: 14, fontSize: 15, color: Colors.textPrimary,
-    minHeight: 100, marginBottom: 16,
+    borderRadius: 10, padding: Spacing.lg, fontFamily: Fonts.regular, fontSize: 15, color: Colors.textPrimary,
+    minHeight: 100, marginBottom: Spacing.lg,
   },
   checkinSubmitBtn: {
-    backgroundColor: Colors.accent, paddingVertical: 14, borderRadius: 10, alignItems: 'center',
+    backgroundColor: Colors.accent, paddingVertical: Spacing.lg, borderRadius: 10, alignItems: 'center',
   },
-  checkinSubmitBtnText: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
+  checkinSubmitBtnText: { fontFamily: Fonts.bold, fontSize: 15, color: Colors.textPrimary },
   // Focus timer modal
-  focusContainer: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 24 },
+  focusContainer: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: Spacing.xxl },
   focusBtnClose: { width: 48, height: 56, borderRadius: 14, backgroundColor: Colors.primary, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
-  focusHeader: { alignItems: 'center', paddingTop: 8, paddingBottom: 16 },
+  focusHeader: { alignItems: 'center', paddingTop: Spacing.sm, paddingBottom: Spacing.lg },
   focusContent: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  focusTitle: { fontSize: 26, fontWeight: '700', color: Colors.textPrimary, textAlign: 'center', lineHeight: 32, marginBottom: 8 },
-  focusMeta: { fontSize: 14, color: Colors.textMuted, marginBottom: 0 },
+  focusTitle: { fontFamily: Fonts.bold, fontSize: 26, color: Colors.textPrimary, textAlign: 'center', lineHeight: 32, marginBottom: Spacing.sm },
+  focusMeta: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textMuted, marginBottom: Spacing.none },
   ringContainer: { width: 320, height: 320, alignItems: 'center', justifyContent: 'center' },
   ringCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
-  focusTimer: { fontSize: 52, fontWeight: '700', color: Colors.textSecondary, fontVariant: ['tabular-nums'], letterSpacing: 2 },
-  focusEstimate: { fontSize: 16, color: Colors.textMuted, marginTop: 8 },
-  focusActions: { flexDirection: 'row', gap: 12, paddingBottom: 24 },
-  focusBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 18, borderRadius: 16 },
+  focusTimer: { fontFamily: Fonts.bold, fontSize: 52, color: Colors.textSecondary, fontVariant: ['tabular-nums'], letterSpacing: 2 },
+  focusEstimate: { fontFamily: Fonts.regular, fontSize: 16, color: Colors.textMuted, marginTop: Spacing.sm },
+  focusActions: { flexDirection: 'row', gap: Spacing.md, paddingBottom: Spacing.xxl },
+  focusBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm, paddingVertical: Spacing.xl, borderRadius: 16 },
   focusBtnStart: { backgroundColor: Colors.accent },
   focusBtnStop: { backgroundColor: Colors.red },
-  focusBtnComplete: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 18, borderRadius: 16, backgroundColor: Colors.primary, borderWidth: 1, borderColor: Colors.border },
-  focusBtnText: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
+  focusBtnComplete: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm, paddingVertical: Spacing.xl, borderRadius: 16, backgroundColor: Colors.primary, borderWidth: 1, borderColor: Colors.border },
+  focusBtnText: { fontFamily: Fonts.bold, fontSize: 16, color: Colors.textPrimary },
 });

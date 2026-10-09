@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Colors } from '../constants/Colors';
+import { Fonts, Spacing } from '../constants/theme';
 
 interface TimerDisplayProps {
   timerStartedAt: string | null;
@@ -65,11 +66,10 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: 4,
+    gap: Spacing.xs,
   },
   time: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontFamily: Fonts.bold, fontSize: 14,
     color: Colors.textSecondary,
     fontVariant: ['tabular-nums'],
   },
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     color: Colors.red,
   },
   estimate: {
-    fontSize: 11,
+    fontFamily: Fonts.regular, fontSize: 11,
     color: Colors.textMuted,
   },
 });

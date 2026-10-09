@@ -41,3 +41,7 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Local Expo dev QR screenshots
+expo-qr.png
+expo-qr-tunnel.png

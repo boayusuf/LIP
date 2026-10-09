@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../constants/Colors';
+import { Fonts, Spacing } from '../constants/theme';
 import { useGroupStore } from '../lib/groupStore';
 
 export default function InAppNotification() {
@@ -70,17 +71,16 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   inner: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
   },
   title: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontFamily: Fonts.bold, fontSize: 14,
     color: Colors.accent,
-    marginBottom: 2,
+    marginBottom: Spacing.xxs,
   },
   message: {
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     color: Colors.textPrimary,
     lineHeight: 19,
   },

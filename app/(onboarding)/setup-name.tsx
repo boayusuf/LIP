@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
+import { Fonts, Spacing } from '../../constants/theme';
 import { useStore } from '../../lib/store';
 import { supabase } from '../../lib/supabase';
 
@@ -52,19 +53,19 @@ export default function SetupNameScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 28 },
+  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: Spacing.xxxl },
   content: { flex: 1, justifyContent: 'center' },
-  emoji: { fontSize: 52, marginBottom: 16 },
-  title: { fontSize: 28, fontWeight: '800', color: Colors.textPrimary, marginBottom: 8 },
-  sub: { fontSize: 15, color: Colors.textMuted, marginBottom: 32, lineHeight: 22 },
+  emoji: { fontFamily: Fonts.regular, fontSize: 52, marginBottom: Spacing.lg },
+  title: { fontFamily: Fonts.bold, fontSize: 28, color: Colors.textPrimary, marginBottom: Spacing.sm },
+  sub: { fontFamily: Fonts.regular, fontSize: 15, color: Colors.textMuted, marginBottom: Spacing.xxxl, lineHeight: 22 },
   input: {
-    backgroundColor: Colors.primary, borderRadius: 12, paddingHorizontal: 18, paddingVertical: 16,
-    fontSize: 18, color: Colors.textPrimary, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.primary, borderRadius: 12, paddingHorizontal: Spacing.xl, paddingVertical: Spacing.lg,
+    fontFamily: Fonts.regular, fontSize: 18, color: Colors.textPrimary, borderWidth: 1, borderColor: Colors.border,
   },
   btn: {
-    backgroundColor: Colors.accent, borderRadius: 14, paddingVertical: 16,
-    alignItems: 'center', marginBottom: 16,
+    backgroundColor: Colors.accent, borderRadius: 14, paddingVertical: Spacing.lg,
+    alignItems: 'center', marginBottom: Spacing.lg,
   },
   btnDisabled: { opacity: 0.4 },
-  btnText: { fontSize: 17, fontWeight: '700', color: Colors.textPrimary },
+  btnText: { fontFamily: Fonts.bold, fontSize: 17, color: Colors.textPrimary },
 });

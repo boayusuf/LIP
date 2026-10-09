@@ -1,10 +1,14 @@
 import { useRouter } from 'expo-router';
-import { Edit } from 'lucide-react-native';
+import {
+  Edit,
+  MessageCircle,
+} from 'lucide-react-native';
 import { useCallback, useEffect } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AvatarImage from '../../components/AvatarImage';
 import { Colors } from '../../constants/Colors';
+import { Fonts, Radius, Spacing } from '../../constants/theme';
 import { useGroupStore } from '../../lib/groupStore';
 import { useStore } from '../../lib/store';
 
@@ -54,7 +58,7 @@ export default function MessagesScreen() {
                 size={48}
                 name={name}
                 avatarUrl={other?.profile?.avatar_url ?? null}
-                style={{ marginRight: 14 }}
+                style={{ marginRight: Spacing.lg }}
               />
               <View style={styles.dmInfo}>
                 <View style={styles.dmRow}>
@@ -74,7 +78,9 @@ export default function MessagesScreen() {
         }}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>💬</Text>
+            <View style={styles.emptyIconWrap}>
+              <MessageCircle color={Colors.textMuted} size={28} />
+            </View>
             <Text style={styles.emptyTitle}>No messages yet</Text>
             <Text style={styles.emptySub}>Tap the pencil icon to start a DM</Text>
           </View>
@@ -88,22 +94,32 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16,
+    paddingHorizontal: Spacing.xl, paddingTop: Spacing.sm, paddingBottom: Spacing.lg,
   },
-  headerTitle: { fontSize: 28, fontWeight: '800', color: Colors.textPrimary },
-  newBtn: { padding: 6 },
-  listContent: { paddingHorizontal: 16 },
+  headerTitle: { fontFamily: Fonts.bold, fontSize: 28, color: Colors.textPrimary },
+  newBtn: { padding: Spacing.sm },
+  listContent: { paddingHorizontal: Spacing.lg },
   dmItem: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: 14,
+    flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.lg,
     borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   dmInfo: { flex: 1 },
   dmRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  dmName: { fontSize: 16, fontWeight: '600', color: Colors.textPrimary },
-  dmTime: { fontSize: 12, color: Colors.textMuted },
-  dmSub: { fontSize: 13, color: Colors.textMuted, marginTop: 2 },
-  empty: { alignItems: 'center', paddingTop: 80 },
-  emptyEmoji: { fontSize: 40, marginBottom: 10 },
-  emptyTitle: { fontSize: 17, fontWeight: '600', color: Colors.textPrimary },
-  emptySub: { fontSize: 14, color: Colors.textMuted, marginTop: 4 },
+  dmName: { fontFamily: Fonts.semibold, fontSize: 16, color: Colors.textPrimary },
+  dmTime: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted },
+  dmSub: { fontFamily: Fonts.regular, fontSize: 13, color: Colors.textMuted, marginTop: Spacing.xxs },
+  empty: { alignItems: 'center', paddingTop: Spacing.hero },
+  emptyIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.lg,
+  },
+  emptyTitle: { fontFamily: Fonts.semibold, fontSize: 17, color: Colors.textPrimary },
+  emptySub: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textMuted, marginTop: Spacing.xs },
 });

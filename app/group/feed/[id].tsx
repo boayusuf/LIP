@@ -1,6 +1,17 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AvatarImage from '../../../components/AvatarImage';
-import { ArrowLeft, MessageCircle, Send } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  BarChart3,
+  Camera,
+  Flame,
+  type LucideIcon,
+  MapPin,
+  MessageCircle,
+  Pin,
+  Send,
+  UserPlus,
+} from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import {
   Dimensions,
@@ -15,6 +26,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../../constants/Colors';
+import { Fonts, Spacing } from '../../../constants/theme';
 import { useGroupStore } from '../../../lib/groupStore';
 import { useStore } from '../../../lib/store';
 import { FeedItem } from '../../../types';
@@ -91,19 +103,20 @@ export default function FeedScreen() {
     return `${days}d ago`;
   };
 
-  const getFeedIcon = (type: string) => {
+  const getFeedIcon = (type: string): LucideIcon => {
     switch (type) {
-      case 'photo_checkin': return '📸';
-      case 'checkin_completed': return '📍';
-      case 'checkin_summary': return '📊';
-      case 'streak': return '🔥';
-      case 'joined': return '👋';
-      default: return '📌';
+      case 'photo_checkin': return Camera;
+      case 'checkin_completed': return MapPin;
+      case 'checkin_summary': return BarChart3;
+      case 'streak': return Flame;
+      case 'joined': return UserPlus;
+      default: return Pin;
     }
   };
 
   const renderFeedItem = ({ item }: { item: FeedItem }) => {
     const authorName = item.author?.name || item.author?.email?.split('@')[0] || 'Unknown';
+    const FeedIcon = getFeedIcon(item.type);
     const reactions = item.reactions || [];
     const comments = item.comments || [];
 
@@ -123,13 +136,13 @@ export default function FeedScreen() {
             size={36}
             name={authorName}
             avatarUrl={item.author?.avatar_url ?? null}
-            style={{ marginRight: 10 }}
+            style={{ marginRight: Spacing.md }}
           />
           <View style={styles.feedHeaderInfo}>
             <Text style={styles.feedAuthor}>{authorName}</Text>
             <Text style={styles.feedTime}>{formatTime(item.created_at)}</Text>
           </View>
-          <Text style={styles.feedTypeIcon}>{getFeedIcon(item.type)}</Text>
+          <FeedIcon color={Colors.textMuted} size={16} />
         </View>
 
         <Text style={styles.feedContentText}>
@@ -299,81 +312,80 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 10,
+    paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md,
     borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
-  backBtn: { padding: 4, marginRight: 10 },
+  backBtn: { padding: Spacing.xs, marginRight: Spacing.md },
   headerCenter: { flex: 1 },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.textPrimary },
-  headerSub: { fontSize: 12, color: Colors.textMuted },
+  headerTitle: { fontFamily: Fonts.bold, fontSize: 17, color: Colors.textPrimary },
+  headerSub: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted },
   feedList: { flex: 1 },
-  feedListContent: { padding: 16, paddingBottom: 40 },
-  emptyFeed: { alignItems: 'center', paddingTop: 80 },
-  emptyFeedEmoji: { fontSize: 40, marginBottom: 8 },
-  emptyFeedText: { fontSize: 16, fontWeight: '600', color: Colors.textPrimary },
-  emptyFeedSub: { fontSize: 13, color: Colors.textMuted, marginTop: 4, textAlign: 'center' },
+  feedListContent: { padding: Spacing.lg, paddingBottom: Spacing.xxxxl },
+  emptyFeed: { alignItems: 'center', paddingTop: Spacing.hero },
+  emptyFeedEmoji: { fontFamily: Fonts.regular, fontSize: 40, marginBottom: Spacing.sm },
+  emptyFeedText: { fontFamily: Fonts.semibold, fontSize: 16, color: Colors.textPrimary },
+  emptyFeedSub: { fontFamily: Fonts.regular, fontSize: 13, color: Colors.textMuted, marginTop: Spacing.xs, textAlign: 'center' },
   feedCard: {
-    backgroundColor: Colors.primary, borderRadius: 12, padding: 14,
-    marginBottom: 12, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.primary, borderRadius: 12, padding: Spacing.lg,
+    marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.border,
   },
-  feedHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  feedHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
   feedAvatar: {
-    width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.accent + '20',
-    alignItems: 'center', justifyContent: 'center', marginRight: 10,
+    width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.accentSubtle,
+    alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md,
   },
-  feedAvatarText: { fontSize: 14, fontWeight: '700', color: Colors.accent },
+  feedAvatarText: { fontFamily: Fonts.bold, fontSize: 14, color: Colors.accent },
   feedHeaderInfo: { flex: 1 },
-  feedAuthor: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
-  feedTime: { fontSize: 11, color: Colors.textMuted },
-  feedTypeIcon: { fontSize: 18 },
-  feedContentText: { fontSize: 15, color: Colors.textPrimary, lineHeight: 20, marginBottom: 8 },
+  feedAuthor: { fontFamily: Fonts.semibold, fontSize: 14, color: Colors.textPrimary },
+  feedTime: { fontFamily: Fonts.regular, fontSize: 11, color: Colors.textMuted },
+  feedContentText: { fontFamily: Fonts.regular, fontSize: 15, color: Colors.textPrimary, lineHeight: 20, marginBottom: Spacing.sm },
   feedPhoto: {
     width: SCREEN_WIDTH - 62,
     height: 250,
     borderRadius: 10,
-    marginBottom: 10,
+    marginBottom: Spacing.md,
     backgroundColor: Colors.border,
   },
-  feedXP: { fontSize: 13, fontWeight: '600', color: Colors.gold, marginBottom: 8 },
-  reactionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
+  feedXP: { fontFamily: Fonts.semibold, fontSize: 13, color: Colors.gold, marginBottom: Spacing.sm },
+  reactionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.xs },
   reactionBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingVertical: 4, paddingHorizontal: 8, borderRadius: 12,
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.xs,
+    paddingVertical: Spacing.xs, paddingHorizontal: Spacing.sm, borderRadius: 12,
     borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.background,
   },
-  reactionBtnActive: { borderColor: Colors.accent, backgroundColor: Colors.accent + '15' },
-  reactionEmoji: { fontSize: 14 },
-  reactionCount: { fontSize: 12, color: Colors.textMuted, fontWeight: '600' },
+  reactionBtnActive: { borderColor: Colors.accent, backgroundColor: Colors.accentSubtle },
+  reactionEmoji: { fontFamily: Fonts.regular, fontSize: 14 },
+  reactionCount: { fontFamily: Fonts.semibold, fontSize: 12, color: Colors.textMuted},
   reactionCountActive: { color: Colors.accent },
   commentBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingVertical: 4, paddingHorizontal: 8, borderRadius: 12,
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.xs,
+    paddingVertical: Spacing.xs, paddingHorizontal: Spacing.sm, borderRadius: 12,
     borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.background,
   },
-  commentCount: { fontSize: 12, color: Colors.textMuted, fontWeight: '600' },
+  commentCount: { fontFamily: Fonts.semibold, fontSize: 12, color: Colors.textMuted},
   commentsSection: {
-    marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: Colors.border,
+    marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.border,
   },
-  commentItem: { marginBottom: 8 },
-  commentAuthor: { fontSize: 12, fontWeight: '600', color: Colors.accent },
-  commentText: { fontSize: 13, color: Colors.textPrimary, marginTop: 1 },
+  commentItem: { marginBottom: Spacing.sm },
+  commentAuthor: { fontFamily: Fonts.semibold, fontSize: 12, color: Colors.accent },
+  commentText: { fontFamily: Fonts.regular, fontSize: 13, color: Colors.textPrimary, marginTop: Spacing.xxs },
   commentInputRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10,
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.md,
   },
   commentInput: {
     flex: 1, backgroundColor: Colors.background, borderRadius: 16,
-    paddingHorizontal: 14, paddingVertical: 8, fontSize: 14,
+    paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, fontFamily: Fonts.regular, fontSize: 14,
     color: Colors.textPrimary, borderWidth: 1, borderColor: Colors.border,
   },
-  commentSendBtn: { padding: 6 },
+  commentSendBtn: { padding: Spacing.sm },
   checkinNote: {
     borderLeftWidth: 3, borderLeftColor: Colors.accent,
-    paddingLeft: 10, paddingVertical: 4, marginBottom: 8,
-    backgroundColor: Colors.accent + '10', borderRadius: 4,
+    paddingLeft: Spacing.md, paddingVertical: Spacing.xs, marginBottom: Spacing.sm,
+    backgroundColor: Colors.accentFaint, borderRadius: 4,
   },
-  checkinNoteText: { fontSize: 13, color: Colors.textSecondary, fontStyle: 'italic', lineHeight: 18 },
-  summaryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 10 },
-  summaryMember: { alignItems: 'center', gap: 4 },
+  checkinNoteText: { fontFamily: Fonts.regular, fontSize: 13, color: Colors.textSecondary, fontStyle: 'italic', lineHeight: 18 },
+  summaryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginBottom: Spacing.md },
+  summaryMember: { alignItems: 'center', gap: Spacing.xs },
   summaryDot: { borderWidth: 2, borderRadius: 16, width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
-  summaryName: { fontSize: 10, color: Colors.textMuted, maxWidth: 48, textAlign: 'center' },
+  summaryName: { fontFamily: Fonts.regular, fontSize: 10, color: Colors.textMuted, maxWidth: 48, textAlign: 'center' },
 });

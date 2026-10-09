@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { CheckSquare, MessageCircle, User, Users } from 'lucide-react-native';
 import { StyleSheet } from 'react-native';
 import { Colors } from '../../constants/Colors';
+import { Fonts, Spacing } from '../../constants/theme';
 
 export default function TabLayout() {
   return (
@@ -60,11 +61,10 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.border,
     borderTopWidth: 1,
     height: 85,
-    paddingTop: 8,
-    paddingBottom: 28,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xxxl,
   },
   tabLabel: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold, fontSize: 11,
   },
 });

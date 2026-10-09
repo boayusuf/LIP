@@ -25,6 +25,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../constants/Colors';
+import { Fonts, Spacing } from '../constants/theme';
 import { useStore } from '../lib/store';
 import { Task } from '../types';
 import SubtaskList from './SubtaskList';
@@ -330,8 +331,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.primary,
     borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
     borderLeftWidth: 3,
     borderLeftColor: 'transparent',
   },
@@ -342,10 +343,10 @@ const styles = StyleSheet.create({
   mainRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
+    gap: Spacing.md,
   },
   completeButton: {
-    paddingTop: 2,
+    paddingTop: Spacing.xxs,
   },
   taskInfo: {
     flex: 1,
@@ -353,11 +354,10 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: Spacing.sm,
   },
   title: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold, fontSize: 15,
     color: Colors.textPrimary,
     flex: 1,
   },
@@ -368,36 +368,34 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 6,
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
   },
   priorityBadge: {
     borderWidth: 1,
     borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xxs,
   },
   priorityText: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontFamily: Fonts.bold, fontSize: 10,
   },
   duration: {
-    fontSize: 12,
+    fontFamily: Fonts.regular, fontSize: 12,
     color: Colors.textMuted,
   },
   xpEarned: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontFamily: Fonts.bold, fontSize: 12,
     color: Colors.gold,
   },
   timerArea: {
     alignItems: 'flex-end',
-    gap: 4,
+    gap: Spacing.xs,
   },
   timerButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: Spacing.xs,
   },
   timerButton: {
     width: 32,
@@ -421,51 +419,51 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   expandedSection: {
-    marginTop: 10,
-    paddingLeft: 34,
+    marginTop: Spacing.md,
+    paddingLeft: Spacing.xxxl,
   },
   notesSection: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 6,
-    marginBottom: 8,
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
   },
   notesText: {
     flex: 1,
-    fontSize: 13,
+    fontFamily: Fonts.regular, fontSize: 13,
     color: Colors.textSecondary,
     lineHeight: 18,
   },
   repeatInfo: {
-    fontSize: 12,
+    fontFamily: Fonts.regular, fontSize: 12,
     color: Colors.accent,
-    marginBottom: 6,
+    marginBottom: Spacing.sm,
   },
   completedDate: {
-    fontSize: 12,
+    fontFamily: Fonts.regular, fontSize: 12,
     color: Colors.textMuted,
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   actions: {
     flexDirection: 'row',
-    gap: 16,
-    marginTop: 10,
-    paddingTop: 8,
+    gap: Spacing.lg,
+    marginTop: Spacing.md,
+    paddingTop: Spacing.sm,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: Spacing.xs,
   },
   actionText: {
-    fontSize: 12,
+    fontFamily: Fonts.regular, fontSize: 12,
     color: Colors.textMuted,
   },
   expandToggle: {
     alignItems: 'center',
-    paddingTop: 6,
+    paddingTop: Spacing.sm,
   },
   // Floating XP
   xpFloat: {
@@ -477,8 +475,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   xpFloatText: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontFamily: Fonts.bold, fontSize: 20,
     color: Colors.gold,
     textShadowColor: 'rgba(0,0,0,0.6)',
     textShadowOffset: { width: 0, height: 1 },
@@ -488,12 +485,12 @@ const styles = StyleSheet.create({
   focusContainer: {
     flex: 1,
     backgroundColor: Colors.background,
-    paddingHorizontal: 24,
+    paddingHorizontal: Spacing.xxl,
   },
   focusHeader: {
     alignItems: 'center',
-    paddingTop: 8,
-    paddingBottom: 16,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.lg,
   },
   focusContent: {
     flex: 1,
@@ -505,7 +502,7 @@ const styles = StyleSheet.create({
     height: 320,
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 16,
+    marginVertical: Spacing.lg,
   },
   ringCenter: {
     position: 'absolute',
@@ -516,37 +513,35 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    marginBottom: 16,
+    marginBottom: Spacing.lg,
   },
   focusTitle: {
-    fontSize: 26,
-    fontWeight: '700',
+    fontFamily: Fonts.bold, fontSize: 26,
     color: Colors.textPrimary,
     textAlign: 'center',
     lineHeight: 32,
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   focusMeta: {
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     color: Colors.textMuted,
-    marginBottom: 40,
+    marginBottom: Spacing.xxxxl,
   },
   focusTimer: {
-    fontSize: 52,
-    fontWeight: '700',
+    fontFamily: Fonts.bold, fontSize: 52,
     color: Colors.textSecondary,
     fontVariant: ['tabular-nums'],
     letterSpacing: 2,
   },
   focusEstimate: {
-    fontSize: 16,
+    fontFamily: Fonts.regular, fontSize: 16,
     color: Colors.textMuted,
-    marginTop: 8,
+    marginTop: Spacing.sm,
   },
   focusActions: {
     flexDirection: 'row',
-    gap: 12,
-    paddingBottom: 24,
+    gap: Spacing.md,
+    paddingBottom: Spacing.xxl,
     alignItems: 'center',
   },
   focusBtnClose: {
@@ -564,8 +559,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 18,
+    gap: Spacing.sm,
+    paddingVertical: Spacing.xl,
     borderRadius: 16,
   },
   focusBtnStart: {
@@ -579,14 +574,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 18,
+    gap: Spacing.sm,
+    paddingVertical: Spacing.xl,
     borderRadius: 16,
     backgroundColor: Colors.green,
   },
   focusBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontFamily: Fonts.bold, fontSize: 16,
     color: Colors.textPrimary,
   },
 });

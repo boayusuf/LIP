@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { Colors } from '../constants/Colors';
+import { Fonts } from '../constants/theme';
 
 interface Props {
   avatarUrl: string | null;
@@ -37,12 +38,11 @@ export default function AvatarImage({ avatarUrl, name, size, style }: Props) {
 
 const styles = StyleSheet.create({
   initials: {
-    backgroundColor: Colors.accent + '20',
+    backgroundColor: Colors.accentSubtle,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  initialsText: {
-    fontWeight: '700',
+  initialsText: { fontFamily: Fonts.bold,
     color: Colors.accent,
   },
 });

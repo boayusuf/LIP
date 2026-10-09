@@ -1,3 +1,4 @@
+import { Lock } from 'lucide-react-native';
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -11,6 +12,7 @@ import {
     View,
 } from 'react-native';
 import { Colors } from '../../constants/Colors';
+import { Fonts, Radius, Spacing } from '../../constants/theme';
 import { useStore } from '../../lib/store';
 
 export default function LoginScreen() {
@@ -39,7 +41,9 @@ export default function LoginScreen() {
     >
       <View style={styles.inner}>
         <View style={styles.header}>
-          <Text style={styles.logo}>🔒</Text>
+          <View style={styles.logoBadge}>
+            <Lock color={Colors.accent} size={26} />
+          </View>
           <Text style={styles.title}>LockInPhase</Text>
           <Text style={styles.subtitle}>Lock in with your squad</Text>
         </View>
@@ -99,73 +103,76 @@ const styles = StyleSheet.create({
   inner: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: Spacing.xxl,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: Spacing.xxxxl,
   },
-  logo: {
-    fontSize: 48,
-    marginBottom: 12,
+  logoBadge: {
+    width: 60,
+    height: 60,
+    borderRadius: Radius.xxl,
+    backgroundColor: Colors.accentSubtle,
+    borderWidth: 1,
+    borderColor: Colors.accentBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.lg,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontFamily: Fonts.bold, fontSize: 28,
     color: Colors.textPrimary,
   },
   subtitle: {
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     color: Colors.textSecondary,
-    marginTop: 4,
+    marginTop: Spacing.xs,
   },
   form: {
-    gap: 4,
+    gap: Spacing.xs,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold, fontSize: 14,
     color: Colors.textSecondary,
-    marginBottom: 6,
-    marginTop: 12,
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.md,
   },
   input: {
     backgroundColor: Colors.inputBg,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    fontFamily: Fonts.regular, fontSize: 16,
     color: Colors.textPrimary,
   },
   button: {
     backgroundColor: Colors.accent,
     borderRadius: 10,
-    paddingVertical: 16,
+    paddingVertical: Spacing.lg,
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: Spacing.xxl,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   buttonText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontFamily: Fonts.bold, fontSize: 16,
     color: Colors.textPrimary,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: Spacing.xxl,
   },
   footerText: {
     color: Colors.textSecondary,
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
   },
   footerLink: {
     color: Colors.accent,
-    fontSize: 14,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold, fontSize: 14,
   },
 });

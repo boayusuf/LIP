@@ -1,18 +1,4 @@
-export const Colors = {
-  primary: '#1E1F22',
-  background: '#111214',
-  secondary: '#2B2D31',
-  accent: '#5865F2',
-  gold: '#F5A623',
-  green: '#57F287',
-  red: '#ED4245',
-  textPrimary: '#FFFFFF',
-  textSecondary: '#B5BAC1',
-  textMuted: '#6D6F78',
-  priorityUrgent: '#ED4245',
-  priorityImportant: '#F5A623',
-  priorityLow: '#5865F2',
-  border: '#2B2D31',
-  inputBg: '#1E1F22',
-  overlay: 'rgba(0, 0, 0, 0.6)',
-} as const;
+// Kept so existing `import { Colors } from '.../constants/Colors'` paths work.
+// New code should import from './theme', which also exports Spacing, Radius,
+// Fonts and Type.
+export { Colors } from './theme';

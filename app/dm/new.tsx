@@ -5,6 +5,7 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, TouchableOpac
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AvatarImage from '../../components/AvatarImage';
 import { Colors } from '../../constants/Colors';
+import { Fonts, Spacing } from '../../constants/theme';
 import { useGroupStore } from '../../lib/groupStore';
 import { supabase } from '../../lib/supabase';
 import { Profile } from '../../types';
@@ -80,7 +81,7 @@ export default function NewDMScreen() {
               size={44}
               name={item.name || item.email}
               avatarUrl={item.avatar_url}
-              style={{ marginRight: 14 }}
+              style={{ marginRight: Spacing.lg }}
             />
             <View style={styles.userInfo}>
               <Text style={styles.userName}>{item.name || item.email.split('@')[0]}</Text>
@@ -104,27 +105,27 @@ export default function NewDMScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingHorizontal: 16, paddingVertical: 10,
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+    paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md,
     borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
-  backBtn: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary },
+  backBtn: { padding: Spacing.xs },
+  headerTitle: { fontFamily: Fonts.bold, fontSize: 18, color: Colors.textPrimary },
   searchBar: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    margin: 16, paddingHorizontal: 14, paddingVertical: 10,
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+    margin: Spacing.lg, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md,
     backgroundColor: Colors.primary, borderRadius: 12,
     borderWidth: 1, borderColor: Colors.border,
   },
-  searchInput: { flex: 1, fontSize: 16, color: Colors.textPrimary },
-  listContent: { paddingHorizontal: 16 },
+  searchInput: { flex: 1, fontFamily: Fonts.regular, fontSize: 16, color: Colors.textPrimary },
+  listContent: { paddingHorizontal: Spacing.lg },
   userRow: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: 14,
+    flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.lg,
     borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   userInfo: { flex: 1 },
-  userName: { fontSize: 16, fontWeight: '600', color: Colors.textPrimary },
-  userEmail: { fontSize: 13, color: Colors.textMuted, marginTop: 2 },
-  empty: { alignItems: 'center', paddingTop: 40 },
-  emptyText: { fontSize: 14, color: Colors.textMuted },
+  userName: { fontFamily: Fonts.semibold, fontSize: 16, color: Colors.textPrimary },
+  userEmail: { fontFamily: Fonts.regular, fontSize: 13, color: Colors.textMuted, marginTop: Spacing.xxs },
+  empty: { alignItems: 'center', paddingTop: Spacing.xxxxl },
+  emptyText: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textMuted },
 });

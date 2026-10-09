@@ -8,6 +8,7 @@ import {
     View,
 } from 'react-native';
 import { Colors } from '../constants/Colors';
+import { Fonts, Spacing } from '../constants/theme';
 import { useStore } from '../lib/store';
 import { Subtask } from '../types';
 
@@ -107,21 +108,21 @@ export default function SubtaskList({ taskId, subtasks, disabled }: SubtaskListP
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 8,
-    paddingTop: 8,
+    marginTop: Spacing.sm,
+    paddingTop: Spacing.sm,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
   },
   progress: {
-    fontSize: 11,
+    fontFamily: Fonts.regular, fontSize: 11,
     color: Colors.textMuted,
-    marginBottom: 6,
+    marginBottom: Spacing.sm,
   },
   subtaskRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 5,
+    gap: Spacing.sm,
+    paddingVertical: Spacing.xs,
   },
   checkbox: {
     width: 18,
@@ -138,7 +139,7 @@ const styles = StyleSheet.create({
   },
   subtaskTitle: {
     flex: 1,
-    fontSize: 13,
+    fontFamily: Fonts.regular, fontSize: 13,
     color: Colors.textSecondary,
   },
   subtaskTitleDone: {
@@ -148,30 +149,30 @@ const styles = StyleSheet.create({
   addRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 4,
+    gap: Spacing.sm,
+    marginTop: Spacing.xs,
   },
   addInput: {
     flex: 1,
-    fontSize: 13,
+    fontFamily: Fonts.regular, fontSize: 13,
     color: Colors.textPrimary,
     backgroundColor: Colors.secondary,
     borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
   },
   addConfirm: {
-    padding: 4,
+    padding: Spacing.xs,
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
-    marginTop: 4,
+    gap: Spacing.xs,
+    paddingVertical: Spacing.xs,
+    marginTop: Spacing.xs,
   },
   addText: {
-    fontSize: 12,
+    fontFamily: Fonts.regular, fontSize: 12,
     color: Colors.textMuted,
   },
 });
