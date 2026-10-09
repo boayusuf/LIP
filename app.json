@@ -33,7 +33,9 @@
           "icon": "./assets/images/icon.png",
           "color": "#5865F2"
         }
-      ]
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "runtimeVersion": {
       "policy": "appVersion"
