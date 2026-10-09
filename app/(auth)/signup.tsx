@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontFamily: Fonts.bold, fontSize: 16,
-    color: Colors.textPrimary,
+    color: Colors.onAccent,
   },
   footer: {
     flexDirection: 'row',

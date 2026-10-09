@@ -429,7 +429,7 @@ export default function ProfileScreen() {
               style={styles.avatarBorder}
             />
             <View style={styles.cameraBadge}>
-              <Camera color={Colors.textPrimary} size={12} />
+              <Camera color={Colors.onAccent} size={12} />
             </View>
           </TouchableOpacity>
           {editingName ? (

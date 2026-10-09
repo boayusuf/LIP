@@ -67,5 +67,5 @@ const styles = StyleSheet.create({
     alignItems: 'center', marginBottom: Spacing.lg,
   },
   btnDisabled: { opacity: 0.4 },
-  btnText: { fontFamily: Fonts.bold, fontSize: 17, color: Colors.textPrimary },
+  btnText: { fontFamily: Fonts.bold, fontSize: 17, color: Colors.onAccent },
 });

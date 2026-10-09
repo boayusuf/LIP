@@ -181,7 +181,7 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
                 {isRunning ? (
                   <Square color={Colors.textPrimary} size={14} fill={Colors.textPrimary} />
                 ) : (
-                  <Play color={Colors.textPrimary} size={14} fill={Colors.textPrimary} />
+                  <Play color={Colors.onAccent} size={14} fill={Colors.onAccent} />
                 )}
               </TouchableOpacity>
               <TouchableOpacity
@@ -308,9 +308,11 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
               {isRunning ? (
                 <Square color={Colors.textPrimary} size={20} fill={Colors.textPrimary} />
               ) : (
-                <Play color={Colors.textPrimary} size={20} fill={Colors.textPrimary} />
+                <Play color={Colors.onAccent} size={20} fill={Colors.onAccent} />
               )}
-              <Text style={styles.focusBtnText}>{isRunning ? 'Pause' : 'Start'}</Text>
+              <Text style={[styles.focusBtnText, !isRunning && styles.focusBtnTextStart]}>
+                {isRunning ? 'Pause' : 'Start'}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -563,6 +565,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xl,
     borderRadius: 16,
   },
+  focusBtnTextStart: { color: Colors.onAccent },
   focusBtnStart: {
     backgroundColor: Colors.accent,
   },

@@ -12,7 +12,7 @@ import {
   Trophy,
   X,
 } from 'lucide-react-native';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   RefreshControl,
   ScrollView,
@@ -22,6 +22,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AddTaskModal from '../../components/AddTaskModal';
 import TaskCard from '../../components/TaskCard';
@@ -38,6 +40,9 @@ const TIME_BLOCKS: { key: TimeBlock; label: string; Icon: LucideIcon; hours: str
 
 const PRIORITY_ORDER = { urgent: 0, important: 1, low: 2 };
 
+/** How far to drag down from the top before the add-task sheet opens. */
+const PULL_TO_ADD_THRESHOLD = 96;
+
 export default function TodoScreen() {
   const { tasks, tasksLoading, fetchTasks, profile } = useStore();
   const [showAddModal, setShowAddModal] = useState(false);
@@ -47,12 +52,35 @@ export default function TodoScreen() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [collapsedBlocks, setCollapsedBlocks] = useState<TimeBlock[]>([]);
+  const [atTop, setAtTop] = useState(true);
 
 const toggleBlock = (block: TimeBlock) => {
   setCollapsedBlocks((prev) =>
     prev.includes(block) ? prev.filter((b) => b !== block) : [...prev, block]
   );
 };
+
+  const openAddModal = useCallback(() => setShowAddModal(true), []);
+
+  /**
+   * Drag down from the top of the list to add a task, as an alternative to the
+   * button. Gated on being at the top so it never competes with scrolling, and
+   * written as a pan rather than reading a negative scroll offset because the
+   * web build disables rubber-band overscroll, so no such offset exists there.
+   */
+  const pullToAdd = useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(atTop && !showAddModal)
+        .activeOffsetY(24)
+        .failOffsetY(-12)
+        .onEnd((event) => {
+          if (event.translationY >= PULL_TO_ADD_THRESHOLD) {
+            runOnJS(openAddModal)();
+          }
+        }),
+    [atTop, showAddModal, openAddModal]
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -147,10 +175,13 @@ const toggleBlock = (block: TimeBlock) => {
         )}
       </View>
 
+      <GestureDetector gesture={pullToAdd}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={(e) => setAtTop(e.nativeEvent.contentOffset.y <= 0)}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -169,6 +200,9 @@ const toggleBlock = (block: TimeBlock) => {
           </View>
         ) : (
           <>
+            {/* A hidden gesture is an unused gesture, so say it is there. */}
+            <Text style={styles.pullHint}>Pull down to add a task</Text>
+
             {/* Active tasks by time block */}
             {!hasActiveTasks && doneTasks > 0 && (
               <View style={styles.allDoneState}>
@@ -260,13 +294,14 @@ const toggleBlock = (block: TimeBlock) => {
 
         <View style={{ height: 100 }} />
       </ScrollView>
+      </GestureDetector>
 
       <TouchableOpacity
         style={styles.fab}
         onPress={() => setShowAddModal(true)}
         activeOpacity={0.8}
       >
-        <Plus color={Colors.textPrimary} size={28} />
+        <Plus color={Colors.onAccent} size={28} />
       </TouchableOpacity>
 
       <AddTaskModal
@@ -341,6 +376,12 @@ const styles = StyleSheet.create({
   scrollView: { flex: 1 },
   scrollContent: { paddingHorizontal: Spacing.screen, paddingTop: Spacing.xs },
   timeBlock: { marginBottom: Spacing.xxl },
+  pullHint: {
+    ...Type.caption,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    paddingBottom: Spacing.md,
+  },
 
   // Section headings are rules, not cards. Only task cards carry a fill, so
   // content always outranks the label above it.

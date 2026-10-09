@@ -21,6 +21,7 @@ const palette = {
   bone500: '#6A6762',
 
   ember: '#E8622C',
+  bone: '#F4F2EF',
   gold: '#E8B33C',
   sage: '#5BBE7E',
   brick: '#D94F4F',
@@ -45,7 +46,14 @@ export const Colors = {
   textMuted: palette.bone500,
 
   // Brand + status
-  accent: palette.ember,
+  //
+  // There is deliberately no brand accent. A single saturated colour on a dark
+  // canvas is what made the earlier palettes read as stock, so emphasis is
+  // carried by weight and contrast instead, and colour is reserved for state:
+  // gold for XP, sage for done, brick for urgent.
+  accent: palette.bone,
+  /** Foreground for anything filled with `accent`. */
+  onAccent: palette.ink900,
   gold: palette.gold,
   green: palette.sage,
   red: palette.brick,
@@ -57,10 +65,10 @@ export const Colors = {
 
   // Tinted fills and borders. These replace the `Colors.accent + '20'` string
   // concatenation pattern, which silently breaks on any non-hex color.
-  accentFaint: 'rgba(232, 98, 44, 0.08)',
-  accentSubtle: 'rgba(232, 98, 44, 0.14)',
-  accentBorder: 'rgba(232, 98, 44, 0.32)',
-  accentTrack: 'rgba(232, 98, 44, 0.45)',
+  accentFaint: 'rgba(244, 242, 239, 0.06)',
+  accentSubtle: 'rgba(244, 242, 239, 0.12)',
+  accentBorder: 'rgba(244, 242, 239, 0.28)',
+  accentTrack: 'rgba(244, 242, 239, 0.40)',
 
   goldSubtle: 'rgba(232, 179, 60, 0.13)',
   goldBorder: 'rgba(232, 179, 60, 0.30)',

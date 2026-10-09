@@ -31,7 +31,7 @@
         "expo-notifications",
         {
           "icon": "./assets/images/icon.png",
-          "color": "#E8622C"
+          "color": "#E8B33C"
         }
       ],
       "expo-font",

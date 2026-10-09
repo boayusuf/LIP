@@ -73,5 +73,5 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.accent, borderRadius: 14, paddingVertical: Spacing.lg,
     alignItems: 'center', marginBottom: Spacing.lg,
   },
-  btnText: { fontFamily: Fonts.bold, fontSize: 17, color: Colors.textPrimary },
+  btnText: { fontFamily: Fonts.bold, fontSize: 17, color: Colors.onAccent },
 });

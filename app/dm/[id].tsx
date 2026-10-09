@@ -114,7 +114,7 @@ export default function DMScreen() {
                 <Text style={styles.replyText} numberOfLines={1}>{item.reply_to.content}</Text>
               </View>
             )}
-            <Text style={styles.msgText}>{item.content}</Text>
+            <Text style={[styles.msgText, isMine && styles.msgTextMine]}>{item.content}</Text>
             <View style={styles.msgFooter}>
               <Text style={[styles.msgTime, isMine && styles.msgTimeMine]}>{formatTime(item.created_at)}</Text>
               {isMine && (
@@ -190,7 +190,7 @@ export default function DMScreen() {
             onPress={handleSend}
             disabled={!text.trim()}
           >
-            <Send color={text.trim() ? Colors.textPrimary : Colors.textMuted} size={20} />
+            <Send color={text.trim() ? Colors.onAccent : Colors.textMuted} size={20} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -227,6 +227,7 @@ const styles = StyleSheet.create({
   msgRowMine: { flexDirection: 'row-reverse' },
   msgBubble: { maxWidth: '75%', borderRadius: 16, padding: Spacing.md, paddingHorizontal: Spacing.lg },
   msgBubbleMine: { backgroundColor: Colors.accent, borderBottomRightRadius: 4 },
+  msgTextMine: { color: Colors.onAccent },
   msgBubbleOther: {
     backgroundColor: Colors.primary, borderBottomLeftRadius: 4,
     borderWidth: 1, borderColor: Colors.border,

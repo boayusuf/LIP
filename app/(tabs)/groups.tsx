@@ -112,7 +112,7 @@ export default function GroupsScreen() {
                 style={styles.emptyBtn}
                 onPress={() => setShowCreateModal(true)}
               >
-                <Plus color={Colors.textPrimary} size={18} />
+                <Plus color={Colors.onAccent} size={18} />
                 <Text style={styles.emptyBtnText}>Create Group</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
   },
   emptyBtnText: {
     fontFamily: Fonts.semibold, fontSize: 14,
-    color: Colors.textPrimary,
+    color: Colors.onAccent,
   },
   groupCard: {
     flexDirection: 'row',
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
   },
   modalSaveText: {
     fontFamily: Fonts.bold, fontSize: 14,
-    color: Colors.textPrimary,
+    color: Colors.onAccent,
   },
   modalContent: {
     padding: Spacing.xl,

@@ -640,7 +640,7 @@ export default function GroupDetailScreen() {
         }}
         activeOpacity={0.8}
       >
-        <Plus color={Colors.textPrimary} size={28} />
+        <Plus color={Colors.onAccent} size={28} />
       </TouchableOpacity>
 
       {/* Group Info Modal */}
@@ -1174,7 +1174,7 @@ const styles = StyleSheet.create({
   checkinSubmitBtn: {
     backgroundColor: Colors.accent, paddingVertical: Spacing.lg, borderRadius: 10, alignItems: 'center',
   },
-  checkinSubmitBtnText: { fontFamily: Fonts.bold, fontSize: 15, color: Colors.textPrimary },
+  checkinSubmitBtnText: { fontFamily: Fonts.bold, fontSize: 15, color: Colors.onAccent },
   // Focus timer modal
   focusContainer: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: Spacing.xxl },
   focusBtnClose: { width: 48, height: 56, borderRadius: 14, backgroundColor: Colors.primary, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },

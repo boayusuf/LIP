@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
   },
   saveText: {
     fontFamily: Fonts.bold, fontSize: 14,
-    color: Colors.textPrimary,
+    color: Colors.onAccent,
   },
   scrollView: {
     flex: 1,

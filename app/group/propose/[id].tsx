@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
   backBtn: { padding: Spacing.xs },
   headerTitle: { fontFamily: Fonts.bold, fontSize: 17, color: Colors.textPrimary },
   saveBtn: { paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg, backgroundColor: Colors.accent, borderRadius: 8 },
-  saveBtnText: { fontFamily: Fonts.bold, fontSize: 14, color: Colors.textPrimary },
+  saveBtnText: { fontFamily: Fonts.bold, fontSize: 14, color: Colors.onAccent },
   scrollView: { flex: 1 },
   scrollContent: { padding: Spacing.xl, paddingBottom: Spacing.xxxxl },
   label: { fontFamily: Fonts.semibold, fontSize: 14, color: Colors.textSecondary, marginBottom: Spacing.sm, marginTop: Spacing.xl },

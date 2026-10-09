@@ -266,7 +266,7 @@ export default function ChatScreen() {
             onPress={handleSend}
             disabled={!text.trim()}
           >
-            <Send color={text.trim() ? Colors.textPrimary : Colors.textMuted} size={20} />
+            <Send color={text.trim() ? Colors.onAccent : Colors.textMuted} size={20} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -307,6 +307,7 @@ const styles = StyleSheet.create({
   msgRowMine: { flexDirection: 'row-reverse' },
   msgBubble: { maxWidth: '75%', borderRadius: 16, padding: Spacing.md, paddingHorizontal: Spacing.lg },
   msgBubbleMine: { backgroundColor: Colors.accent, borderBottomRightRadius: 4 },
+  msgTextMine: { color: Colors.onAccent },
   msgBubbleOther: {
     backgroundColor: Colors.primary, borderBottomLeftRadius: 4,
     borderWidth: 1, borderColor: Colors.border,
