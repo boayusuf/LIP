@@ -8,7 +8,7 @@
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
-      "backgroundColor": "#111214"
+      "backgroundColor": "#0D0C0B"
     },
     "web": {
       "output": "single",
@@ -20,7 +20,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#111214"
+        "backgroundColor": "#0D0C0B"
       },
       "package": "com.lockinphase.app",
       "softwareKeyboardLayoutMode": "resize"
@@ -31,7 +31,7 @@
         "expo-notifications",
         {
           "icon": "./assets/images/icon.png",
-          "color": "#5865F2"
+          "color": "#E8622C"
         }
       ],
       "expo-font",
