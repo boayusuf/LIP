@@ -46,6 +46,16 @@ const head = `
          paints, and no white gap behind a scroll overshoot. */
       html, body, #root { background-color: #0D0C0B; }
 
+      /* Expo's reset sets height:100%. In an installed iOS PWA the viewport
+         extends under the home indicator, so 100% is taller than the visible
+         area: the layout shifts down and the tab bar clips. dvh measures the
+         area actually on screen. The 100% line stays as the fallback for
+         browsers without dvh. */
+      html, body, #root {
+        height: 100%;
+        height: 100dvh;
+      }
+
       body {
         /* No rubber-band bounce past the top or bottom of the page. */
         overscroll-behavior: none;

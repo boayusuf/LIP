@@ -1,15 +1,30 @@
 import { Tabs } from 'expo-router';
 import { CheckSquare, MessageCircle, User, Users } from 'lucide-react-native';
 import { StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
 import { Fonts, Spacing } from '../../constants/theme';
 
+/** Row height above the home indicator: icon, label and their padding. */
+const TAB_BAR_CONTENT_HEIGHT = 56;
+
 export default function TabLayout() {
+  // The bar used to hardcode height 85 / paddingBottom 32, which guessed at the
+  // home indicator. On an installed iOS PWA that guess is wrong and the bar
+  // clips, so grow it by the real inset instead.
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            height: TAB_BAR_CONTENT_HEIGHT + insets.bottom,
+            paddingBottom: insets.bottom,
+          },
+        ],
         tabBarActiveTintColor: Colors.accent,
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarLabelStyle: styles.tabLabel,
@@ -60,9 +75,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     borderTopColor: Colors.border,
     borderTopWidth: 1,
-    height: 85,
     paddingTop: Spacing.sm,
-    paddingBottom: Spacing.xxxl,
   },
   tabLabel: {
     fontFamily: Fonts.semibold, fontSize: 11,
