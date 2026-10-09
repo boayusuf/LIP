@@ -1,0 +1,10 @@
+{
+  "buildCommand": "npx expo export --platform web && node scripts/inject-pwa-head.mjs",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
+  ]
+}
