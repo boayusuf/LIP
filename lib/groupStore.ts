@@ -30,6 +30,9 @@ interface GroupState {
 
   fetchGroups: () => Promise<void>;
   fetchDMs: () => Promise<void>;
+  /** Unread message count per group id, for the tab badges. */
+  unreadByGroup: Record<string, number>;
+  fetchUnreadCounts: () => Promise<void>;
   createGroup: (name: string, description: string) => Promise<{ error: string | null; group?: Group }>;
   createDM: (otherUserId: string) => Promise<{ error: string | null; group?: Group }>;
   joinGroup: (inviteCode: string) => Promise<{ error: string | null }>;
@@ -72,6 +75,7 @@ export const useGroupStore = create<GroupState>((set, get) => ({
   groupTasks: [],
   messages: [],
   feedItems: [],
+  unreadByGroup: {},
   inAppNotif: null,
   clearInAppNotif: () => set({ inAppNotif: null }),
   activeChatGroupId: null,
@@ -774,6 +778,52 @@ export const useGroupStore = create<GroupState>((set, get) => ({
     await get().fetchMessages(groupId);
   },
 
+  /**
+   * Counts messages from other people that have no message_reads row for me.
+   *
+   * That is an anti-join, which PostgREST cannot express, so it is done as two
+   * bounded queries and diffed here rather than per-group round trips. The cap
+   * keeps the payload fixed: past it the badge reads "99+" anyway.
+   */
+  fetchUnreadCounts: async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { groups, dmGroups } = get();
+    const groupIds = [...groups, ...dmGroups].map((g) => g.id);
+    if (groupIds.length === 0) {
+      set({ unreadByGroup: {} });
+      return;
+    }
+
+    const { data: recent } = await supabase
+      .from('messages')
+      .select('id, group_id')
+      .in('group_id', groupIds)
+      .neq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(500);
+
+    if (!recent || recent.length === 0) {
+      set({ unreadByGroup: {} });
+      return;
+    }
+
+    const { data: reads } = await supabase
+      .from('message_reads')
+      .select('message_id')
+      .eq('user_id', user.id)
+      .in('message_id', recent.map((m) => m.id));
+
+    const readIds = new Set((reads || []).map((r) => r.message_id));
+    const counts: Record<string, number> = {};
+    for (const m of recent) {
+      if (readIds.has(m.id)) continue;
+      counts[m.group_id] = (counts[m.group_id] || 0) + 1;
+    }
+    set({ unreadByGroup: counts });
+  },
+
   markMessagesRead: async (groupId) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -784,6 +834,11 @@ export const useGroupStore = create<GroupState>((set, get) => ({
     await supabase.from('message_reads').upsert(rows, { onConflict: 'message_id,user_id', ignoreDuplicates: true });
     // Refresh so senders see updated read_by
     await get().fetchMessages(groupId);
+    set((state) => {
+      const next = { ...state.unreadByGroup };
+      delete next[groupId];
+      return { unreadByGroup: next };
+    });
   },
 
   subscribeToMessages: (groupId) => {
@@ -823,7 +878,7 @@ export const useGroupStore = create<GroupState>((set, get) => ({
             const { data: sender } = await supabase
               .from('profiles').select('name, email').eq('id', payload.new.user_id).single();
             const senderName = sender?.name || sender?.email?.split('@')[0] || 'Someone';
-            set({
+            set((state) => ({
               inAppNotif: {
                 id: payload.new.id,
                 groupId,
@@ -832,7 +887,12 @@ export const useGroupStore = create<GroupState>((set, get) => ({
                 senderName,
                 content: payload.new.content,
               },
-            });
+              // Bump the badge straight away rather than waiting for a refetch.
+              unreadByGroup: {
+                ...state.unreadByGroup,
+                [groupId]: (state.unreadByGroup[groupId] || 0) + 1,
+              },
+            }));
           }
         )
         .subscribe()

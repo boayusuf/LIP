@@ -5,6 +5,7 @@ import {
   SpaceGrotesk_700Bold,
   useFonts,
 } from '@expo-google-fonts/space-grotesk';
+import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -17,9 +18,27 @@ import { useGroupStore } from '../lib/groupStore';
 import { useStore } from '../lib/store';
 import { supabase } from '../lib/supabase';
 
+/**
+ * React Navigation defaults to its LIGHT theme, so any surface it draws itself
+ * -- scene backgrounds, the tab bar's top border -- came out white and showed
+ * as a pale seam against the app's own dark screens.
+ */
+const navigationTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    background: Colors.background,
+    card: Colors.primary,
+    border: Colors.border,
+    text: Colors.textPrimary,
+    primary: Colors.accent,
+    notification: Colors.red,
+  },
+};
+
 export default function RootLayout() {
   const { session, loading, profile, setSession, fetchProfile, fetchTasks, resetRepeatingTasks, registerPushToken } = useStore();
-  const { groups, dmGroups, fetchGroups, fetchDMs, subscribeForNotifications } = useGroupStore();
+  const { groups, dmGroups, fetchGroups, fetchDMs, subscribeForNotifications, fetchUnreadCounts } = useGroupStore();
   const segments = useSegments();
   const router = useRouter();
   const [fontsLoaded, fontError] = useFonts({
@@ -53,6 +72,7 @@ export default function RootLayout() {
   useEffect(() => {
     const allIds = [...groups, ...dmGroups].map(g => g.id);
     if (allIds.length === 0) return;
+    fetchUnreadCounts();
     const unsub = subscribeForNotifications(allIds);
     return unsub;
   }, [groups.map(g => g.id).join(','), dmGroups.map(g => g.id).join(',')]);
@@ -90,11 +110,18 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <StatusBar style="light" />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(onboarding)" />
-          <Stack.Screen name="(tabs)" />
-        </Stack>
+        <ThemeProvider value={navigationTheme}>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: Colors.background },
+            }}
+          >
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(onboarding)" />
+            <Stack.Screen name="(tabs)" />
+          </Stack>
+        </ThemeProvider>
         <InAppNotification />
       </SafeAreaProvider>
     </GestureHandlerRootView>
