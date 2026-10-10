@@ -217,6 +217,15 @@ const toggleBlock = (block: TimeBlock) => {
           />
         }
       >
+        <Animated.View style={[styles.pullIndicator, pullIndicatorStyle]}>
+          <Animated.Text style={[styles.pullIndicatorText, pullLabelStyle]}>
+            Release to add a task
+          </Animated.Text>
+        </Animated.View>
+
+        {/* A hidden gesture is an unused gesture, so say it is there. */}
+        <Text style={styles.pullHint}>Pull down to add a task</Text>
+
         {totalTasks === 0 && !tasksLoading ? (
           <View style={styles.emptyState}>
             <View style={styles.emptyIconWrap}>
@@ -227,15 +236,6 @@ const toggleBlock = (block: TimeBlock) => {
           </View>
         ) : (
           <>
-            <Animated.View style={[styles.pullIndicator, pullIndicatorStyle]}>
-              <Animated.Text style={[styles.pullIndicatorText, pullLabelStyle]}>
-                Release to add a task
-              </Animated.Text>
-            </Animated.View>
-
-            {/* A hidden gesture is an unused gesture, so say it is there. */}
-            <Text style={styles.pullHint}>Pull down to add a task</Text>
-
             {/* Active tasks by time block */}
             {!hasActiveTasks && doneTasks > 0 && (
               <View style={styles.allDoneState}>

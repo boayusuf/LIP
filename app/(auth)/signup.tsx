@@ -1,5 +1,5 @@
-import { Lock } from 'lucide-react-native';
-import { Link } from 'expo-router';
+import { Lock, MailCheck } from 'lucide-react-native';
+import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
     KeyboardAvoidingView,
@@ -22,6 +22,8 @@ export default function SignUpScreen() {
   const [loading, setLoading] = useState(false);
   // Validation and rejection belong in the form, not in a dialog.
   const [formError, setFormError] = useState<string | null>(null);
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const router = useRouter();
   const signUp = useStore((s) => s.signUp);
 
   const handleSignUp = async () => {
@@ -40,13 +42,32 @@ export default function SignUpScreen() {
     if (error) {
       setFormError(error);
     } else {
-      showAlert(
-        'Check Your Email',
-        'We sent you a confirmation link. Tap it, then come back and sign in.',
-        [{ text: 'OK' }]
-      );
+      // A dialog here was invisible on web, so the account appeared not to have
+      // been created at all. Replace the screen with the instruction instead.
+      setSentTo(email.trim());
     }
   };
+
+  if (sentTo) {
+    return (
+      <View style={[styles.container, styles.sentWrap]}>
+        <View style={styles.logoBadge}>
+          <MailCheck color={Colors.green} size={26} />
+        </View>
+        <Text style={styles.title}>Confirm your email</Text>
+        <Text style={styles.sentBody}>
+          We sent a confirmation link to {sentTo}. Open it on this device, then
+          come back and sign in.
+        </Text>
+        <Text style={styles.sentHint}>
+          No email? Check spam, or sign up again with a different address.
+        </Text>
+        <TouchableOpacity style={styles.button} onPress={() => router.replace('/(auth)/login')}>
+          <Text style={styles.buttonText}>Back to sign in</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -173,6 +194,26 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.lg,
     fontFamily: Fonts.regular, fontSize: 16,
     color: Colors.textPrimary,
+  },
+  sentWrap: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xxl,
+  },
+  sentBody: {
+    fontFamily: Fonts.regular,
+    fontSize: 15,
+    lineHeight: 22,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginTop: Spacing.sm,
+  },
+  sentHint: {
+    fontFamily: Fonts.regular,
+    fontSize: 13,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    marginTop: Spacing.md,
   },
   formError: {
     fontFamily: Fonts.medium,

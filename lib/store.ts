@@ -88,7 +88,13 @@ export const useStore = create<AppState>((set, get) => ({
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { name } },
+      options: {
+        data: { name },
+        // Without this the confirmation link falls back to the project's Site
+        // URL, which is why early emails pointed at localhost.
+        emailRedirectTo:
+          typeof window !== 'undefined' ? window.location.origin : undefined,
+      },
     });
     if (error) return { error: error.message };
     return { error: null };

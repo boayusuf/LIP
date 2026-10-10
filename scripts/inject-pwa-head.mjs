@@ -37,9 +37,11 @@ const head = `
     <meta name="apple-mobile-web-app-title" content="LockInPhase" />
     <meta name="theme-color" content="#0D0C0B" />
 
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+    <link rel="manifest" href="/manifest.json?v=2" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png?v=2" />
+    <!-- Versioned: browsers cache favicons far more aggressively than pages,
+         so the icon would not change without a new URL. -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png?v=2" />
 
     <style id="pwa-shell">
       /* Match the app canvas so there is no white flash before the bundle
