@@ -1,28 +1,12 @@
 import { Tabs } from 'expo-router';
 import { CheckSquare, MessageCircle, User, Users } from 'lucide-react-native';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { useGroupStore } from '../../lib/groupStore';
-import { useWebBottomInset } from '../../lib/useBottomInset';
 import { Colors } from '../../constants/Colors';
 import { Fonts } from '../../constants/theme';
 
-/** Icon plus label plus breathing room, before the home indicator. */
-const TAB_BAR_CONTENT_HEIGHT = 58;
-
 export default function TabLayout() {
   const { groups, dmGroups, unreadByGroup } = useGroupStore();
-
-  // Numbers, not a calc() string: the navigator measures this height in JS to
-  // work out how much room to leave above the bar. Zero on native, where the
-  // navigator already handles the inset itself.
-  const bottomInset = useWebBottomInset();
-  const tabBarSizing =
-    Platform.OS === 'web'
-      ? {
-          height: TAB_BAR_CONTENT_HEIGHT + bottomInset,
-          paddingBottom: bottomInset,
-        }
-      : null;
   const sumUnread = (list: { id: string }[]) =>
     list.reduce((total, g) => total + (unreadByGroup[g.id] || 0), 0);
   const groupUnread = sumUnread(groups);
@@ -32,7 +16,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: [styles.tabBar, tabBarSizing],
+        tabBarStyle: styles.tabBar,
         tabBarActiveTintColor: Colors.accent,
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarLabelStyle: styles.tabLabel,
@@ -82,6 +66,10 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
+  // Height and bottom padding are deliberately absent. Now that the page owns
+  // the full screen, env() resolves and safe-area-context feeds the real inset
+  // to the navigator, which sizes the bar. Setting either here adds the home
+  // indicator a second time and pushes content under the bar.
   tabBar: {
     backgroundColor: Colors.primary,
     borderTopColor: Colors.border,

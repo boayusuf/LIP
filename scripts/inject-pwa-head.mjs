@@ -59,14 +59,6 @@ const head = `
         height: 100%;
       }
 
-      /* With a full-screen web view the status bar now overlaps the page, so the
-         top inset has to be reserved here: react-native-safe-area-context
-         reports zero on web, so SafeAreaView cannot do it. */
-      #root {
-        box-sizing: border-box;
-        padding-top: env(safe-area-inset-top, 0px);
-      }
-
       body {
         /* No rubber-band bounce past the top or bottom of the page. */
         overscroll-behavior: none;
