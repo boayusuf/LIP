@@ -80,10 +80,13 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  // No top border: against the dark canvas it read as a hard line rather than
-  // an edge, and React Navigation's own default border is removed with it.
+  // The bar takes the screen background, not the surface colour. While the two
+  // differed, any gap between the screen and the bar -- content not filling,
+  // scroll padding, inset rounding -- showed up as a visible band. Matching
+  // them makes the seam invisible whatever the geometry does, and the border
+  // and shadow go for the same reason.
   tabBar: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.background,
     borderTopWidth: 0,
     elevation: 0,
     shadowOpacity: 0,

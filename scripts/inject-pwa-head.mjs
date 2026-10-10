@@ -58,7 +58,7 @@ const head = `
          real and the layout can reserve the space itself. -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="LockInPhase" />
-    <meta name="theme-color" content="#171614" />
+    <meta name="theme-color" content="#0D0C0B" />
 
     <link rel="manifest" href="/manifest.json?v=2" />
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png?v=2" />
