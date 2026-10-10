@@ -30,6 +30,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { TopEdgeOnly } from '../../constants/safeArea';
 import AddTaskModal from '../../components/AddTaskModal';
 import TaskCard from '../../components/TaskCard';
 import { Colors } from '../../constants/Colors';
@@ -147,7 +148,7 @@ const toggleBlock = (block: TimeBlock) => {
   const hasActiveTasks = activeTasks.length > 0;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={TopEdgeOnly}>
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>

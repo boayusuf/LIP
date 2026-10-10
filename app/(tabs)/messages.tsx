@@ -6,6 +6,7 @@ import {
 import { useCallback, useEffect } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { TopEdgeOnly } from '../../constants/safeArea';
 import AvatarImage from '../../components/AvatarImage';
 import { Colors } from '../../constants/Colors';
 import { Fonts, Radius, Spacing } from '../../constants/theme';
@@ -33,7 +34,7 @@ export default function MessagesScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={TopEdgeOnly}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Messages</Text>
         <TouchableOpacity style={styles.newBtn} onPress={() => router.push('/dm/new')}>

@@ -21,6 +21,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { TopAndBottomEdges } from '../../../constants/safeArea';
 import { Colors } from '../../../constants/Colors';
 import { Fonts, Radius, Spacing } from '../../../constants/theme';
 import { useGroupStore } from '../../../lib/groupStore';
@@ -172,7 +173,7 @@ export default function ChatScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={TopAndBottomEdges}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <ArrowLeft color={Colors.textPrimary} size={22} />

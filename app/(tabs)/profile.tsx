@@ -28,6 +28,7 @@ import {
 import { showAlert } from '../../lib/alert';
 import AvatarImage from '../../components/AvatarImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { TopEdgeOnly } from '../../constants/safeArea';
 import { Colors } from '../../constants/Colors';
 import { Fonts, Radius, Spacing } from '../../constants/theme';
 import { useGroupStore } from '../../lib/groupStore';
@@ -399,7 +400,7 @@ export default function ProfileScreen() {
   const displayName = profile?.name || profile?.email?.split('@')[0] || 'User';
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={TopEdgeOnly}>
       {/* Level-up modal */}
       <Modal visible={!!levelUpData} transparent animationType="none" onRequestClose={() => setLevelUpData(null)}>
         <TouchableOpacity style={styles.levelUpOverlay} activeOpacity={1} onPress={() => setLevelUpData(null)}>

@@ -40,6 +40,7 @@ import {
 } from 'react-native';
 import { showAlert } from '../../lib/alert';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TopEdgeOnly } from '../../constants/safeArea';
 import Svg, { Circle } from 'react-native-svg';
 import AvatarImage from '../../components/AvatarImage';
 import TimerDisplay from '../../components/TimerDisplay';
@@ -243,7 +244,7 @@ export default function GroupDetailScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={TopEdgeOnly}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>

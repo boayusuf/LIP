@@ -25,6 +25,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { TopEdgeOnly } from '../../../constants/safeArea';
 import { Colors } from '../../../constants/Colors';
 import { Fonts, Spacing } from '../../../constants/theme';
 import { useGroupStore } from '../../../lib/groupStore';
@@ -272,7 +273,7 @@ export default function FeedScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={TopEdgeOnly}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <ArrowLeft color={Colors.textPrimary} size={22} />

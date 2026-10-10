@@ -23,6 +23,7 @@ import {
 } from 'react-native';
 import { showAlert } from '../../../lib/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { TopEdgeOnly } from '../../../constants/safeArea';
 import { Colors } from '../../../constants/Colors';
 import { Fonts, Spacing, withAlpha } from '../../../constants/theme';
 import { useGroupStore } from '../../../lib/groupStore';
@@ -135,7 +136,7 @@ export default function ProposeTaskScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={TopEdgeOnly}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
