@@ -9,8 +9,25 @@
  * Runs after `expo export --platform web`, locally and on Vercel. Idempotent.
  */
 
+import { execSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+
+/**
+ * Which commit is actually live. Without this there is no way to tell a
+ * deployment that has not landed from a fix that did not work -- a stale CDN
+ * copy of this file looks exactly like code that did nothing.
+ */
+function buildCommit() {
+  if (process.env.VERCEL_GIT_COMMIT_SHA) {
+    return process.env.VERCEL_GIT_COMMIT_SHA.slice(0, 7);
+  }
+  try {
+    return execSync('git rev-parse --short HEAD').toString().trim();
+  } catch {
+    return 'unknown';
+  }
+}
 
 const INDEX = join(process.cwd(), 'dist', 'index.html');
 const MARKER = 'data-pwa-head';
@@ -28,6 +45,7 @@ if (html.includes(MARKER)) {
 }
 
 const head = `
+    <meta name="build-commit" content="${buildCommit()}" />
     <meta ${MARKER} name="description" content="Accountability and focus, tracked with the people you answer to." />
 
     <!-- Launch fullscreen from the home screen, with no Safari chrome. -->
