@@ -2,7 +2,7 @@
   "name": "LockInPhase",
   "short_name": "LockInPhase",
   "description": "Accountability and focus, tracked with the people you answer to.",
-  "start_url": "/",
+  "start_url": "/?debug=layout",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",

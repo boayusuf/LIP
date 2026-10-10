@@ -127,7 +127,8 @@ const head = `
             'background:rgba(232,179,60,.95);color:#000;font:11px/1.35 monospace;' +
             'padding:6px;white-space:pre-wrap';
           box.textContent =
-            'innerH ' + window.innerHeight +
+            'commit ' + (document.querySelector('meta[name=build-commit]') || {}).content +
+            '\ninnerH ' + window.innerHeight +
             '  clientH ' + document.documentElement.clientHeight +
             '  visualH ' + (window.visualViewport ? Math.round(window.visualViewport.height) : 'n/a') +
             '
