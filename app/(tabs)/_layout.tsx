@@ -7,21 +7,39 @@ import { Colors } from '../../constants/Colors';
 import { Fonts } from '../../constants/theme';
 
 /**
- * The row the icons and labels live in. UIKit's is 49; these labels are 11pt
- * with a 14pt line box, so 52 holds icon and label without crowding either.
+ * The bar is built from its parts rather than given a round number, because
+ * every one of them is fixed by BottomTabItem and none of them is guesswork.
+ *
+ * `padding: 5` on the item is the one piece that cannot be overridden:
+ * tabBarItemStyle lands on the wrapper, not on the pressable that carries it.
  */
-const TAB_BAR_CONTENT_HEIGHT = 52;
+const TAB_ITEM_PADDING = 5;
+
+/**
+ * TabBarIcon's own wrapper is 31x28 for a 23pt glyph, so nearly 5pt of the
+ * row is air around the icon. 25 keeps the glyph at its size and drops the
+ * air; tabBarIconStyle is applied after the wrapper's own style, so it wins.
+ */
+const TAB_ICON_BOX_HEIGHT = 25;
+
+/** Matches tabLabel.lineHeight below. Stated once, used in both places. */
+const TAB_LABEL_LINE_HEIGHT = 14;
+
+/** Exactly what the icon and label need, with nothing left over to sit empty. */
+const TAB_BAR_CONTENT_HEIGHT =
+  TAB_ITEM_PADDING * 2 + TAB_ICON_BOX_HEIGHT + TAB_LABEL_LINE_HEIGHT;
 
 /**
  * What the bar reserves below that row for the home indicator.
  *
- * BottomTabBar's own default is the whole bottom inset -- 34pt on this phone.
- * That is UIKit's figure, sized for a 49pt bar whose labels sit higher up the
- * screen. The indicator itself is a 5pt pill 8pt off the bottom edge, so 14
- * clears it, and the remaining 20pt stop reading as a dead band under the
- * labels. Zero on hardware with no indicator, where there is nothing to clear.
+ * BottomTabBar's own default is the whole bottom inset -- 34pt here. That is
+ * UIKit's figure for a 49pt bar, and under an 11pt label it reads as a dead
+ * band. The indicator is a 5pt pill sitting 8pt off the bottom edge, so its
+ * top is 13pt up and that is the real floor. The item's own 5pt of bottom
+ * padding already counts toward it, so the bar adds 10: the labels end 15pt
+ * above the screen, clear of the pill, and the other 19pt go back to the app.
  */
-const HOME_INDICATOR_CLEARANCE = 14;
+const HOME_INDICATOR_CLEARANCE = 10;
 
 export default function TabLayout() {
   const { groups, dmGroups, unreadByGroup } = useGroupStore();
@@ -45,6 +63,12 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: [styles.tabBar, tabBarSizing],
+        // Stated, not inferred. Left to itself the navigator picks the layout
+        // from the viewport width, so the bar it draws on a phone and the one
+        // it draws anywhere wider are different shapes. This app is a phone
+        // app; the icon sits above its label at every width.
+        tabBarLabelPosition: 'below-icon',
+        tabBarIconStyle: styles.tabIcon,
         tabBarActiveTintColor: Colors.accent,
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarLabelStyle: styles.tabLabel,
@@ -113,12 +137,15 @@ const styles = StyleSheet.create({
     elevation: 0,
     shadowOpacity: 0,
   },
+  tabIcon: {
+    height: TAB_ICON_BOX_HEIGHT,
+  },
   // An explicit lineHeight: without one the line box can grow past the row the
   // navigator allots it and the descenders get sliced off.
   tabLabel: {
     fontFamily: Fonts.semibold,
     fontSize: 11,
-    lineHeight: 14,
+    lineHeight: TAB_LABEL_LINE_HEIGHT,
   },
   tabBadge: {
     backgroundColor: Colors.red,
