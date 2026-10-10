@@ -415,7 +415,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </Modal>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Profile</Text>
         </View>
@@ -562,6 +562,10 @@ const heatStyles = StyleSheet.create({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+  // flex: 1 so the scroller fills the screen. Without it react-native-web sizes
+  // it to its content, and the container's darker background shows through
+  // underneath as a band above the tab bar. Every other tab already did this.
+  scrollView: { flex: 1 },
   scrollContent: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxxxl },
   header: { paddingTop: Spacing.sm, paddingBottom: Spacing.lg },
   headerTitle: { fontFamily: Fonts.bold, fontSize: 28, color: Colors.textPrimary },
