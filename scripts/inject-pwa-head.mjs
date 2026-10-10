@@ -58,16 +58,6 @@ const head = `
         height: 100%;
       }
 
-      /* Keep the tab bar clear of the home indicator. react-native-safe-area-
-         context reports a zero bottom inset in this standalone web build, so
-         the reservation is made here instead. The colour matches the tab bar so
-         the reserved strip reads as part of it rather than a band beneath it. */
-      #root {
-        box-sizing: border-box;
-        padding-bottom: env(safe-area-inset-bottom, 0px);
-        background-color: #171614;
-      }
-
       body {
         /* No rubber-band bounce past the top or bottom of the page. */
         overscroll-behavior: none;
