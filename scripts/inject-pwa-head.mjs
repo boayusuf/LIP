@@ -71,22 +71,12 @@ const head = `
          paints, and no white gap behind a scroll overshoot. */
       html, body, #root { background-color: #0D0C0B; }
 
-      /* html/body height is percentage based and, in a standalone PWA, 100% does
-         not reliably resolve to the screen: that ambiguity is what left a strip
-         of unpainted page below the tab bar. Pinning the app to the viewport
-         with fixed inset:0 removes the guesswork -- bottom:0 is the bottom of
-         the screen, so the bar always reaches it. */
+      /* The only height rule. Expo's own reset already gives #root height:100%
+         and flex:1; this just gives it something to resolve against. Earlier
+         attempts added 100dvh, then fixed positioning, then root padding, each
+         competing with that reset and with the insets below. */
       html, body {
         height: 100%;
-      }
-
-      #root {
-        position: fixed;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: 0;
-        height: auto;
       }
 
       body {

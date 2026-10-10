@@ -5,19 +5,8 @@ import { useGroupStore } from '../../lib/groupStore';
 import { Colors } from '../../constants/Colors';
 import { Fonts } from '../../constants/theme';
 
-/**
- * Fixed, compact, and deliberately not derived from the safe-area inset.
- * The inset reads as an implausibly large value in this standalone web build,
- * and adding it was what made the bar eat a large part of the screen.
- */
-const TAB_BAR_HEIGHT = 56;
-
 export default function TabLayout() {
   const { groups, dmGroups, unreadByGroup } = useGroupStore();
-
-  // paddingBottom is pinned to 0 as well: left alone, BottomTabBar adds the
-  // inset inside the bar and squashes the icons against the top of it.
-  const tabBarSizing = { height: TAB_BAR_HEIGHT, paddingBottom: 0 };
   const sumUnread = (list: { id: string }[]) =>
     list.reduce((total, g) => total + (unreadByGroup[g.id] || 0), 0);
   const groupUnread = sumUnread(groups);
@@ -27,7 +16,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: [styles.tabBar, tabBarSizing],
+        tabBarStyle: styles.tabBar,
         tabBarActiveTintColor: Colors.accent,
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarLabelStyle: styles.tabLabel,
@@ -77,13 +66,15 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  // The bar takes the screen background, not the surface colour. While the two
-  // differed, any gap between the screen and the bar -- content not filling,
-  // scroll padding, inset rounding -- showed up as a visible band. Matching
-  // them makes the seam invisible whatever the geometry does, and the border
-  // and shadow go for the same reason.
+  // No height and no padding here. BottomTabBar sizes itself as 49 plus the
+  // bottom inset and reserves the home indicator inside its own background,
+  // which is correct; overriding either is what broke it.
+  //
+  // borderTopWidth does need stating. BottomTabBar always applies a hairline
+  // top border in the navigation theme's border colour, and that hairline is
+  // the line above the bar. Removing it is structural, not a repaint.
   tabBar: {
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.primary,
     borderTopWidth: 0,
     elevation: 0,
     shadowOpacity: 0,

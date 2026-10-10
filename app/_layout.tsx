@@ -28,9 +28,8 @@ const navigationTheme = {
   colors: {
     ...DarkTheme.colors,
     background: Colors.background,
-    // Surfaces the navigator draws itself must match the screens too.
-    card: Colors.background,
-    border: Colors.background,
+    card: Colors.primary,
+    border: Colors.border,
     text: Colors.textPrimary,
     primary: Colors.accent,
     notification: Colors.red,

@@ -528,7 +528,6 @@ export default function ProfileScreen() {
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
 
-        <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -537,7 +536,7 @@ export default function ProfileScreen() {
 const heatStyles = StyleSheet.create({
   container: {
     backgroundColor: Colors.primary, borderRadius: 14, padding: Spacing.lg,
-    marginBottom: Spacing.xl, borderWidth: 1, borderColor: Colors.border,
+    marginBottom: Spacing.xl,
   },
   header: { marginBottom: Spacing.md },
   title: { fontFamily: Fonts.semibold, fontSize: 13, color: Colors.textSecondary },
@@ -566,12 +565,12 @@ const styles = StyleSheet.create({
   // it to its content, and the container's darker background shows through
   // underneath as a band above the tab bar. Every other tab already did this.
   scrollView: { flex: 1 },
-  scrollContent: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxxxl },
+  scrollContent: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxl },
   header: { paddingTop: Spacing.sm, paddingBottom: Spacing.lg },
   headerTitle: { fontFamily: Fonts.bold, fontSize: 28, color: Colors.textPrimary },
   profileCard: { alignItems: 'center', marginBottom: Spacing.xl },
   avatarWrapper: { marginBottom: Spacing.md, position: 'relative' },
-  avatarBorder: { borderWidth: 3, borderColor: Colors.accent },
+  avatarBorder: { borderWidth: 2, borderColor: Colors.borderStrong },
   cameraBadge: {
     position: 'absolute', bottom: 0, right: 0,
     width: 24, height: 24, borderRadius: 12,
@@ -590,12 +589,11 @@ const styles = StyleSheet.create({
   joinedText: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted, marginTop: Spacing.xxs },
   levelCard: {
     backgroundColor: Colors.primary, borderRadius: 14, padding: Spacing.lg, marginBottom: Spacing.lg,
-    borderWidth: 1, borderColor: Colors.goldBorder,
   },
   levelHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
   levelBadge: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   levelNumber: { fontFamily: Fonts.bold, fontSize: 16, color: Colors.gold },
-  levelName: { fontFamily: Fonts.semibold, fontSize: 14, color: Colors.textSecondary },
+  levelName: { fontFamily: Fonts.medium, fontSize: 13, color: Colors.textMuted },
   xpBarBg: {
     height: 8, backgroundColor: Colors.background, borderRadius: 4, overflow: 'hidden', marginBottom: Spacing.sm,
   },
@@ -606,12 +604,12 @@ const styles = StyleSheet.create({
   statsGrid: { flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.xl },
   statCard: {
     flex: 1, backgroundColor: Colors.primary, borderRadius: 12, padding: Spacing.lg,
-    alignItems: 'center', gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border,
+    alignItems: 'center', gap: Spacing.sm,
   },
   statValue: { fontFamily: Fonts.bold, fontSize: 22, color: Colors.textPrimary },
-  statLabel: { fontFamily: Fonts.semibold, fontSize: 11, color: Colors.textMuted},
+  statLabel: { fontFamily: Fonts.medium, fontSize: 11, color: Colors.textMuted, letterSpacing: 0.3 },
   section: { marginBottom: Spacing.xl },
-  sectionTitle: { fontFamily: Fonts.bold, fontSize: 16, color: Colors.textSecondary, marginBottom: Spacing.md },
+  sectionTitle: { fontFamily: Fonts.semibold, fontSize: 13, color: Colors.textMuted, letterSpacing: 0.3, marginBottom: Spacing.md },
   groupItem: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.primary,
     borderRadius: 10, padding: Spacing.md, marginBottom: Spacing.sm, borderWidth: 1, borderColor: Colors.border,
