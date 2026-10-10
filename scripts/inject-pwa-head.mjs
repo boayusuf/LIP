@@ -48,14 +48,24 @@ const head = `
          paints, and no white gap behind a scroll overshoot. */
       html, body, #root { background-color: #0D0C0B; }
 
-      /* Expo's reset sets height:100%. In an installed iOS PWA the viewport
-         extends under the home indicator, so 100% is taller than the visible
-         area: the layout shifts down and the tab bar clips. dvh measures the
-         area actually on screen. The 100% line stays as the fallback for
-         browsers without dvh. */
+      /* Height must stay 100%, NOT 100dvh.
+         With apple-mobile-web-app-status-bar-style: black, iOS places the web
+         view below the status bar, so the usable height is the screen minus
+         that bar. dvh reports the whole screen, which made the app overflow by
+         exactly the status bar height and clipped the tab bar labels off the
+         bottom. 100% resolves against the real container. */
       html, body, #root {
         height: 100%;
-        height: 100dvh;
+      }
+
+      /* Keep the tab bar clear of the home indicator. react-native-safe-area-
+         context reports a zero bottom inset in this standalone web build, so
+         the reservation is made here instead. The colour matches the tab bar so
+         the reserved strip reads as part of it rather than a band beneath it. */
+      #root {
+        box-sizing: border-box;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        background-color: #171614;
       }
 
       body {
