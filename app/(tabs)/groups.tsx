@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { showAlert } from '../../lib/alert';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TopEdgeOnly } from '../../constants/safeArea';
 import { Colors } from '../../constants/Colors';
 import { Fonts, Radius, Spacing } from '../../constants/theme';
@@ -20,6 +20,11 @@ import { useGroupStore } from '../../lib/groupStore';
 
 export default function GroupsScreen() {
   const router = useRouter();
+  // The create and join sheets below are presentationStyle="pageSheet", which
+  // react-native-web's Modal ignores -- it renders position: fixed at all four
+  // offsets, so the sheet covers the status bar and its header goes under the
+  // notch. The sheet reserves the insets itself.
+  const insets = useSafeAreaInsets();
   const { groups, groupsLoading, fetchGroups, createGroup, joinGroup } = useGroupStore();
   const [refreshing, setRefreshing] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -157,7 +162,12 @@ export default function GroupsScreen() {
 
       {/* Create Group Modal */}
       <Modal visible={showCreateModal} animationType="slide" presentationStyle="pageSheet">
-        <View style={styles.modalContainer}>
+        <View
+          style={[
+            styles.modalContainer,
+            { paddingTop: insets.top, paddingBottom: insets.bottom },
+          ]}
+        >
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setShowCreateModal(false)}>
               <X color={Colors.textSecondary} size={24} />
@@ -201,7 +211,12 @@ export default function GroupsScreen() {
 
       {/* Join Group Modal */}
       <Modal visible={showJoinModal} animationType="slide" presentationStyle="pageSheet">
-        <View style={styles.modalContainer}>
+        <View
+          style={[
+            styles.modalContainer,
+            { paddingTop: insets.top, paddingBottom: insets.bottom },
+          ]}
+        >
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setShowJoinModal(false)}>
               <X color={Colors.textSecondary} size={24} />

@@ -18,6 +18,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { showAlert } from '../lib/alert';
 import { Colors } from '../constants/Colors';
 import { Fonts, Spacing, withAlpha } from '../constants/theme';
@@ -58,6 +59,11 @@ const PICKER_HOURS = Array.from({ length: 9 }, (_, i) => i); // 0-8
 const PICKER_MINUTES = Array.from({ length: 12 }, (_, i) => i * 5); // 0,5,10...55
 
 export default function AddTaskModal({ visible, onClose, editTask }: AddTaskModalProps) {
+  // presentationStyle is a native-only prop. react-native-web's Modal renders
+  // position: fixed with all four offsets at 0 and never reads it, so the
+  // sheet goes full-bleed and its header sits behind the status bar. The two
+  // focus-timer modals already reserve the insets themselves for this reason.
+  const insets = useSafeAreaInsets();
   const { addTask, updateTask } = useStore();
 
   const [title, setTitle] = useState('');
@@ -193,7 +199,7 @@ export default function AddTaskModal({ visible, onClose, editTask }: AddTaskModa
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView
-        style={styles.container}
+        style={[styles.container, { paddingTop: insets.top }]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.header}>
@@ -216,7 +222,10 @@ export default function AddTaskModal({ visible, onClose, editTask }: AddTaskModa
 
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: Spacing.xxxxl + insets.bottom },
+          ]}
           keyboardShouldPersistTaps="handled"
         >
           {/* Title */}
