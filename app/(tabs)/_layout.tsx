@@ -1,26 +1,23 @@
 import { Tabs } from 'expo-router';
 import { CheckSquare, MessageCircle, User, Users } from 'lucide-react-native';
 import { StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGroupStore } from '../../lib/groupStore';
 import { Colors } from '../../constants/Colors';
 import { Fonts } from '../../constants/theme';
 
-/** Icons and labels. The home indicator is added on top of this. */
-const TAB_BAR_ROW_HEIGHT = 54;
+/**
+ * Fixed, compact, and deliberately not derived from the safe-area inset.
+ * The inset reads as an implausibly large value in this standalone web build,
+ * and adding it was what made the bar eat a large part of the screen.
+ */
+const TAB_BAR_HEIGHT = 56;
 
 export default function TabLayout() {
   const { groups, dmGroups, unreadByGroup } = useGroupStore();
 
-  // Stated outright rather than left to the navigator's defaults. These values
-  // replace what BottomTabBar would compute, they do not add to it, so the
-  // indicator is reserved exactly once -- inside the bar, where the bar's own
-  // background covers it and nothing shows underneath.
-  const insets = useSafeAreaInsets();
-  const tabBarSizing = {
-    height: TAB_BAR_ROW_HEIGHT + insets.bottom,
-    paddingBottom: insets.bottom,
-  };
+  // paddingBottom is pinned to 0 as well: left alone, BottomTabBar adds the
+  // inset inside the bar and squashes the icons against the top of it.
+  const tabBarSizing = { height: TAB_BAR_HEIGHT, paddingBottom: 0 };
   const sumUnread = (list: { id: string }[]) =>
     list.reduce((total, g) => total + (unreadByGroup[g.id] || 0), 0);
   const groupUnread = sumUnread(groups);
