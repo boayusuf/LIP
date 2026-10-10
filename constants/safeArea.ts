@@ -23,10 +23,14 @@ export const TopEdgeOnly: Record<Edge, EdgeMode> = {
   left: 'off',
 };
 
-/** For full-screen pushes with no tab bar, where the bottom is the screen's. */
-export const TopAndBottomEdges: Record<Edge, EdgeMode> = {
-  top: 'additive',
-  right: 'off',
-  bottom: 'additive',
-  left: 'off',
-};
+/**
+ * How close anything readable may come to the bottom of the screen.
+ *
+ * Not the bottom inset. iOS reports 34 there, which is UIKit's reservation for
+ * a 49pt tab bar; the home indicator itself is a 5pt pill sitting 8pt off the
+ * edge, so 13 is where it starts and anything above that is clear of it. Each
+ * place that reaches the bottom subtracts whatever padding it already has and
+ * reserves the difference, so the tab bar's labels and the chat composer end
+ * the same distance up the screen.
+ */
+export const HomeIndicatorFloor = 13;

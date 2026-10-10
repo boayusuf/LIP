@@ -20,8 +20,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { TopAndBottomEdges } from '../../../constants/safeArea';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { HomeIndicatorFloor, TopEdgeOnly } from '../../../constants/safeArea';
 import { Colors } from '../../../constants/Colors';
 import { Fonts, Radius, Spacing } from '../../../constants/theme';
 import { useGroupStore } from '../../../lib/groupStore';
@@ -33,6 +33,13 @@ const MENTION_REGEX = /@(\w*)$/;
 export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  // The composer sits on the bottom edge of the screen, so it clears the home
+  // indicator itself rather than letting SafeAreaView reserve the whole 34pt
+  // inset underneath it -- that reservation was the black space below the bar.
+  // The bar's own 8pt of padding counts toward the clearance.
+  const composerBottomPadding =
+    insets.bottom > 0 ? HomeIndicatorFloor : Spacing.sm;
   const { session } = useStore();
   const {
     currentGroup,
@@ -173,7 +180,7 @@ export default function ChatScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={TopAndBottomEdges}>
+    <SafeAreaView style={styles.container} edges={TopEdgeOnly}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <ArrowLeft color={Colors.textPrimary} size={22} />
@@ -251,7 +258,7 @@ export default function ChatScreen() {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.inputBar}>
+        <View style={[styles.inputBar, { paddingBottom: composerBottomPadding }]}>
           <TextInput
             ref={inputRef}
             style={styles.input}
@@ -260,6 +267,13 @@ export default function ChatScreen() {
             value={text}
             onChangeText={setText}
             multiline
+            // A multiline TextInput is a <textarea> on web, and react-native-web
+            // only sets its rows attribute from rows or numberOfLines. With
+            // neither, the attribute is absent and HTML's own default of two
+            // rows applies -- which is why the composer stood twice as tall as
+            // the line it held. Web only: native sizes itself to its content
+            // and pinning the line count there would stop it growing.
+            numberOfLines={Platform.OS === 'web' ? 1 : undefined}
             maxLength={2000}
           />
           <TouchableOpacity

@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { CheckSquare, MessageCircle, User, Users } from 'lucide-react-native';
 import { StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { HomeIndicatorFloor } from '../../constants/safeArea';
 import { useGroupStore } from '../../lib/groupStore';
 import { Colors } from '../../constants/Colors';
 import { Fonts } from '../../constants/theme';
@@ -32,14 +33,12 @@ const TAB_BAR_CONTENT_HEIGHT =
 /**
  * What the bar reserves below that row for the home indicator.
  *
- * BottomTabBar's own default is the whole bottom inset -- 34pt here. That is
- * UIKit's figure for a 49pt bar, and under an 11pt label it reads as a dead
- * band. The indicator is a 5pt pill sitting 8pt off the bottom edge, so its
- * top is 13pt up and that is the real floor. The item's own 5pt of bottom
- * padding already counts toward it, so the bar adds 10: the labels end 15pt
- * above the screen, clear of the pill, and the other 19pt go back to the app.
+ * BottomTabBar's own default is the whole bottom inset -- 34pt here -- which
+ * is UIKit's figure for a 49pt bar and reads as a dead band under an 11pt
+ * label. HomeIndicatorFloor is the real limit; the item's own bottom padding
+ * already covers part of it, so the bar reserves only the rest.
  */
-const HOME_INDICATOR_CLEARANCE = 10;
+const HOME_INDICATOR_CLEARANCE = HomeIndicatorFloor - TAB_ITEM_PADDING;
 
 export default function TabLayout() {
   const { groups, dmGroups, unreadByGroup } = useGroupStore();
