@@ -33,9 +33,14 @@ const head = `
     <!-- Launch fullscreen from the home screen, with no Safari chrome. -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <!-- black-translucent, not black. Under "black" iOS keeps the web view out
+         of the safe areas, which makes every env(safe-area-inset-*) resolve to
+         zero and leaves iOS itself drawing the strips above and below the app.
+         Translucent hands the whole screen to the page, so those values become
+         real and the layout can reserve the space itself. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="LockInPhase" />
-    <meta name="theme-color" content="#0D0C0B" />
+    <meta name="theme-color" content="#171614" />
 
     <link rel="manifest" href="/manifest.json?v=2" />
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png?v=2" />
@@ -48,14 +53,18 @@ const head = `
          paints, and no white gap behind a scroll overshoot. */
       html, body, #root { background-color: #0D0C0B; }
 
-      /* Height must stay 100%, NOT 100dvh.
-         With apple-mobile-web-app-status-bar-style: black, iOS places the web
-         view below the status bar, so the usable height is the screen minus
-         that bar. dvh reports the whole screen, which made the app overflow by
-         exactly the status bar height and clipped the tab bar labels off the
-         bottom. 100% resolves against the real container. */
+      /* Height stays 100%, never 100dvh: dvh once reported more than the
+         container actually was, which pushed the tab bar off the bottom. */
       html, body, #root {
         height: 100%;
+      }
+
+      /* With a full-screen web view the status bar now overlaps the page, so the
+         top inset has to be reserved here: react-native-safe-area-context
+         reports zero on web, so SafeAreaView cannot do it. */
+      #root {
+        box-sizing: border-box;
+        padding-top: env(safe-area-inset-top, 0px);
       }
 
       body {
@@ -77,6 +86,40 @@ const head = `
         user-select: text;
       }
     </style>
+
+    <script id="pwa-layout-debug">
+      // Append ?debug=layout to the URL to overlay the real viewport and inset
+      // numbers. Diagnosing this from a screenshot alone does not work.
+      if (location.search.indexOf('debug=layout') !== -1) {
+        window.addEventListener('load', function () {
+          var probe = document.createElement('div');
+          probe.style.cssText =
+            'position:fixed;visibility:hidden;' +
+            'padding-top:env(safe-area-inset-top,0px);' +
+            'padding-bottom:env(safe-area-inset-bottom,0px)';
+          document.body.appendChild(probe);
+          var cs = getComputedStyle(probe);
+          var box = document.createElement('pre');
+          box.style.cssText =
+            'position:fixed;left:0;right:0;bottom:0;z-index:99999;margin:0;' +
+            'background:rgba(232,179,60,.95);color:#000;font:11px/1.35 monospace;' +
+            'padding:6px;white-space:pre-wrap';
+          box.textContent =
+            'innerH ' + window.innerHeight +
+            '  clientH ' + document.documentElement.clientHeight +
+            '  visualH ' + (window.visualViewport ? Math.round(window.visualViewport.height) : 'n/a') +
+            '
+screenH ' + window.screen.height + '  dpr ' + window.devicePixelRatio +
+            '
+inset top ' + cs.paddingTop + '  bottom ' + cs.paddingBottom +
+            '
+standalone ' + (window.navigator.standalone === true) +
+            '  rootH ' + (document.getElementById('root') || {}).clientHeight;
+          probe.remove();
+          document.body.appendChild(box);
+        });
+      }
+    </script>
 
     <script id="pwa-gestures">
       // Safari ignores user-scalable=no in a normal tab, so pinch-zoom is
