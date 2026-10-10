@@ -2,7 +2,6 @@ import { Lock } from 'lucide-react-native';
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import {
-    Alert,
     KeyboardAvoidingView,
     Platform,
     StyleSheet,
@@ -11,6 +10,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { showAlert } from '../../lib/alert';
 import { Colors } from '../../constants/Colors';
 import { Fonts, Radius, Spacing } from '../../constants/theme';
 import { useStore } from '../../lib/store';
@@ -20,24 +20,27 @@ export default function SignUpScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  // Validation and rejection belong in the form, not in a dialog.
+  const [formError, setFormError] = useState<string | null>(null);
   const signUp = useStore((s) => s.signUp);
 
   const handleSignUp = async () => {
     if (!name.trim() || !email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+      setFormError('Fill in your name, email and password.');
       return;
     }
     if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      setFormError('Password must be at least 6 characters.');
       return;
     }
+    setFormError(null);
     setLoading(true);
     const { error } = await signUp(email.trim(), password, name.trim());
     setLoading(false);
     if (error) {
-      Alert.alert('Sign Up Failed', error);
+      setFormError(error);
     } else {
-      Alert.alert(
+      showAlert(
         'Check Your Email',
         'We sent you a confirmation link. Tap it, then come back and sign in.',
         [{ text: 'OK' }]
@@ -91,6 +94,8 @@ export default function SignUpScreen() {
             onChangeText={setPassword}
             secureTextEntry
           />
+
+          {formError && <Text style={styles.formError}>{formError}</Text>}
 
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
@@ -168,6 +173,12 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.lg,
     fontFamily: Fonts.regular, fontSize: 16,
     color: Colors.textPrimary,
+  },
+  formError: {
+    fontFamily: Fonts.medium,
+    fontSize: 13,
+    color: Colors.red,
+    marginBottom: Spacing.md,
   },
   button: {
     backgroundColor: Colors.accent,

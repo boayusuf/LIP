@@ -15,7 +15,6 @@ import {
 } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
-    Alert,
     Animated,
     Modal,
     StyleSheet,
@@ -23,6 +22,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { showAlert } from '../lib/alert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../constants/Colors';
 import { Fonts, Spacing } from '../constants/theme';
@@ -96,7 +96,7 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
   };
 
   const handleDelete = () => {
-    Alert.alert('Delete Task', `Delete "${task.title}"?`, [
+    showAlert('Delete Task', `Delete "${task.title}"?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => deleteTask(task.id) },
     ]);

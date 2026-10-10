@@ -29,7 +29,6 @@ import {
 } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
   Modal,
   RefreshControl,
   ScrollView,
@@ -39,6 +38,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { showAlert } from '../../lib/alert';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import AvatarImage from '../../components/AvatarImage';
@@ -174,7 +174,7 @@ export default function GroupDetailScreen() {
   };
 
   const handleLeave = () => {
-    Alert.alert(
+    showAlert(
       'Leave Group',
       `Are you sure you want to leave "${currentGroup?.name}"?`,
       [
@@ -437,13 +437,13 @@ export default function GroupDetailScreen() {
                         onPress={async () => {
                           const pickPhoto = async (): Promise<string | null> => {
                             return new Promise((resolve) => {
-                              Alert.alert('Photo Proof', 'Choose photo source', [
+                              showAlert('Photo Proof', 'Choose photo source', [
                                 {
                                   text: 'Camera',
                                   onPress: async () => {
                                     const perm = await ImagePicker.requestCameraPermissionsAsync();
                                     if (!perm.granted) {
-                                      Alert.alert('Permission needed', 'Please allow camera access in settings');
+                                      showAlert('Permission needed', 'Please allow camera access in settings');
                                       return resolve(null);
                                     }
                                     const result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: false });
@@ -473,11 +473,11 @@ export default function GroupDetailScreen() {
                           if (task.require_checkin && task.checkin_time) {
                             const cs = getCheckinStatus(task);
                             if (cs.status === 'closed') {
-                              Alert.alert('Check-in closed', `The check-in window has closed (${cs.label}).`);
+                              showAlert('Check-in closed', `The check-in window has closed (${cs.label}).`);
                               return;
                             }
                             if (cs.status === 'too_early') {
-                              Alert.alert('Too early', `Check-in ${cs.label}.`);
+                              showAlert('Too early', `Check-in ${cs.label}.`);
                               return;
                             }
                           }
@@ -633,7 +633,7 @@ export default function GroupDetailScreen() {
         style={styles.fab}
         onPress={() => {
           if (memberCount < 2) {
-            Alert.alert('Need more members', 'A group needs at least 2 members before proposing tasks.');
+            showAlert('Need more members', 'A group needs at least 2 members before proposing tasks.');
             return;
           }
           router.push(`/group/propose/${id}`);
@@ -740,7 +740,7 @@ export default function GroupDetailScreen() {
                   if (task?.require_checkin && task?.checkin_time) {
                     const cs = getCheckinStatus(task);
                     if (cs.status === 'closed') {
-                      Alert.alert('Check-in closed', `The check-in window has closed (${cs.label}).`);
+                      showAlert('Check-in closed', `The check-in window has closed (${cs.label}).`);
                       return;
                     }
                   }

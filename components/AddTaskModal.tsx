@@ -8,7 +8,6 @@ import {
 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -19,6 +18,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { showAlert } from '../lib/alert';
 import { Colors } from '../constants/Colors';
 import { Fonts, Spacing, withAlpha } from '../constants/theme';
 import { useStore } from '../lib/store';
@@ -126,15 +126,15 @@ export default function AddTaskModal({ visible, onClose, editTask }: AddTaskModa
 
   const handleSave = async () => {
     if (!title.trim()) {
-      Alert.alert('Error', 'Please enter a task title');
+      showAlert('Error', 'Please enter a task title');
       return;
     }
     if (showCustomDuration && duration === 0) {
-      Alert.alert('Error', 'Please set a duration greater than 0');
+      showAlert('Error', 'Please set a duration greater than 0');
       return;
     }
     if (repeatCycle === 'custom' && (!customRepeatDays || parseInt(customRepeatDays) < 1)) {
-      Alert.alert('Error', 'Please enter a valid number of days for custom repeat');
+      showAlert('Error', 'Please enter a valid number of days for custom repeat');
       return;
     }
     setSaving(true);
@@ -163,7 +163,7 @@ export default function AddTaskModal({ visible, onClose, editTask }: AddTaskModa
         repeat_interval_days: repeatIntervalDays,
       });
       if (error) {
-        Alert.alert('Error', error);
+        showAlert('Error', error);
         setSaving(false);
         return;
       }

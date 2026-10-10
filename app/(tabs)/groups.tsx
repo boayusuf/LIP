@@ -2,7 +2,6 @@ import { useRouter } from 'expo-router';
 import { LogIn, Plus, Users, X } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
   Modal,
   RefreshControl,
   ScrollView,
@@ -12,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { showAlert } from '../../lib/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
 import { Fonts, Radius, Spacing } from '../../constants/theme';
@@ -40,14 +40,14 @@ export default function GroupsScreen() {
 
   const handleCreate = async () => {
     if (!groupName.trim()) {
-      Alert.alert('Error', 'Please enter a group name');
+      showAlert('Error', 'Please enter a group name');
       return;
     }
     setSaving(true);
     const { error } = await createGroup(groupName.trim(), groupDesc.trim());
     setSaving(false);
     if (error) {
-      Alert.alert('Error', error);
+      showAlert('Error', error);
       return;
     }
     setGroupName('');
@@ -57,14 +57,14 @@ export default function GroupsScreen() {
 
   const handleJoin = async () => {
     if (!inviteCode.trim()) {
-      Alert.alert('Error', 'Please enter an invite code');
+      showAlert('Error', 'Please enter an invite code');
       return;
     }
     setSaving(true);
     const { error } = await joinGroup(inviteCode.trim());
     setSaving(false);
     if (error) {
-      Alert.alert('Error', error);
+      showAlert('Error', error);
       return;
     }
     setInviteCode('');

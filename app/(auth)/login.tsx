@@ -2,7 +2,6 @@ import { Lock } from 'lucide-react-native';
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import {
-    Alert,
     KeyboardAvoidingView,
     Platform,
     StyleSheet,
@@ -11,6 +10,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { showAlert } from '../../lib/alert';
 import { Colors } from '../../constants/Colors';
 import { Fonts, Radius, Spacing } from '../../constants/theme';
 import { useStore } from '../../lib/store';
@@ -19,18 +19,22 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  // Shown in the form rather than in a dialog: this is the one error people
+  // actually have to read and act on.
+  const [formError, setFormError] = useState<string | null>(null);
   const signIn = useStore((s) => s.signIn);
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+      setFormError('Enter your email and password.');
       return;
     }
+    setFormError(null);
     setLoading(true);
     const { error } = await signIn(email.trim(), password);
     setLoading(false);
     if (error) {
-      Alert.alert('Login Failed', error);
+      setFormError(error);
     }
   };
 
@@ -70,6 +74,8 @@ export default function LoginScreen() {
             onChangeText={setPassword}
             secureTextEntry
           />
+
+          {formError && <Text style={styles.formError}>{formError}</Text>}
 
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
@@ -147,6 +153,12 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.lg,
     fontFamily: Fonts.regular, fontSize: 16,
     color: Colors.textPrimary,
+  },
+  formError: {
+    fontFamily: Fonts.medium,
+    fontSize: 13,
+    color: Colors.red,
+    marginBottom: Spacing.md,
   },
   button: {
     backgroundColor: Colors.accent,

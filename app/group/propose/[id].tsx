@@ -11,7 +11,6 @@ import {
 } from 'lucide-react-native';
 import { useState } from 'react';
 import {
-    Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -22,6 +21,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { showAlert } from '../../../lib/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../../constants/Colors';
 import { Fonts, Spacing, withAlpha } from '../../../constants/theme';
@@ -96,7 +96,7 @@ export default function ProposeTaskScreen() {
 
   const handleSave = async () => {
     if (!title.trim()) {
-      Alert.alert('Error', 'Please enter a task title');
+      showAlert('Error', 'Please enter a task title');
       return;
     }
     if (!id) return;
@@ -116,7 +116,7 @@ export default function ProposeTaskScreen() {
     });
     setSaving(false);
     if (error) {
-      Alert.alert('Error', error);
+      showAlert('Error', error);
       return;
     }
     router.back();

@@ -15,7 +15,6 @@ import {
 } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   Animated,
   Dimensions,
   Modal,
@@ -26,6 +25,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { showAlert } from '../../lib/alert';
 import AvatarImage from '../../components/AvatarImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
@@ -359,7 +359,7 @@ export default function ProfileScreen() {
   const handleAvatarPress = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Permission needed', 'Please allow photo library access in settings.');
+      showAlert('Permission needed', 'Please allow photo library access in settings.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -370,7 +370,7 @@ export default function ProfileScreen() {
     });
     if (result.canceled || !result.assets[0]) return;
     const { error } = await uploadAvatar(result.assets[0].uri);
-    if (error) Alert.alert('Upload failed', error);
+    if (error) showAlert('Upload failed', error);
   };
 
   const handleSaveName = async () => {
@@ -384,7 +384,7 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert('Log Out', 'Are you sure you want to log out?', [
+    showAlert('Log Out', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Log Out',
