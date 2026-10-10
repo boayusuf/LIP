@@ -53,10 +53,22 @@ const head = `
          paints, and no white gap behind a scroll overshoot. */
       html, body, #root { background-color: #0D0C0B; }
 
-      /* Height stays 100%, never 100dvh: dvh once reported more than the
-         container actually was, which pushed the tab bar off the bottom. */
-      html, body, #root {
+      /* html/body height is percentage based and, in a standalone PWA, 100% does
+         not reliably resolve to the screen: that ambiguity is what left a strip
+         of unpainted page below the tab bar. Pinning the app to the viewport
+         with fixed inset:0 removes the guesswork -- bottom:0 is the bottom of
+         the screen, so the bar always reaches it. */
+      html, body {
         height: 100%;
+      }
+
+      #root {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        height: auto;
       }
 
       body {
